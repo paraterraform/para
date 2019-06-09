@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bazil.org/fuse"
 	"fmt"
 	"github.com/paraterraform/para/app"
 	"github.com/spf13/viper"
@@ -12,6 +13,31 @@ import (
 
 const usageTemplate = `Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}
+`
+
+const helpShort = `Para - the missing 3rd-party plugin manager for Terraform.
+
+Overview
+  Para, together with Terraform, is a reference to the concept of paraterraforming.
+
+  As paraterraforming is an option until terraforming is possible - Para takes care of distributing 3rd party plugins
+  for Terraform until it's implemented in Terraform.
+
+  Para uses FUSE to mount a virtual file system over well-known Terraform plugin locations (such as terraform.d/plugins
+  and ~/.terraform.d/plugins - see https://www.terraform.io/docs/extend/how-terraform-works.html#plugin-locations for
+  details) and downloads them on demand (with optional caching) using a curated index (or your own).
+	
+  Please note that FUSE must be available (macOS requires OSXFUSE - https://osxfuse.github.io).
+
+Usage:
+  para terraform [flags] <command> [args]
+
+Examples:
+  para terraform init
+  para terraform plan
+  para terraform apply
+
+Use "para -h/--help" for more information.
 `
 
 var defaultConfigCandidates = []string{
@@ -37,6 +63,7 @@ var optionCachePath string
 var optionIndex string
 var optionConfig string
 var optionExtensions string
+var optionUnmount string
 
 var rootCmd = &cobra.Command{
 
@@ -96,31 +123,18 @@ Concepts
     not provided via a flag, config file is discovered from one of pre-defined locations.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(optionUnmount) > 0 {
+			fmt.Printf("Force-unmounting: '%s'\n", optionUnmount)
+			err := fuse.Unmount(optionUnmount)
+			if err != nil {
+				fmt.Printf("* Error: %s", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
+		}
+
 		if len(args) == 0 {
-			fmt.Println(
-				`Para - the missing 3rd-party plugin manager for Terraform.
-
-Overview
-  Para, together with Terraform, is a reference to the concept of paraterraforming.
-
-  As paraterraforming is an option until terraforming is possible - Para takes care of distributing 3rd party plugins
-  for Terraform until it's implemented in Terraform.
-
-  Para uses FUSE to mount a virtual file system over well-known Terraform plugin locations (such as terraform.d/plugins
-  and ~/.terraform.d/plugins - see https://www.terraform.io/docs/extend/how-terraform-works.html#plugin-locations for
-  details) and downloads them on demand (with optional caching) using a curated index (or your own).
-	
-  Please note that FUSE must be available (macOS requires OSXFUSE - https://osxfuse.github.io).
-
-Usage:
-  para terraform [flags] <command> [args]
-
-Examples:
-  para terraform init
-  para terraform plan
-  para terraform apply
-
-Use "para -h/--help" for more information.`)
+			fmt.Print(helpShort)
 			os.Exit(1)
 		}
 
@@ -184,6 +198,13 @@ func init() {
 		"c",
 		"",
 		"cache dir (default - ~/.cache/para if exists or /tmp/para-$UID)",
+	)
+	rootCmd.Flags().StringVarP(
+		&optionUnmount,
+		"unmount",
+		"u",
+		"",
+		"force unmount dir (just unmount the given dir and exit, all other flags and arguments ignored)",
 	)
 
 	_ = viper.BindPFlag("index", rootCmd.Flags().Lookup("index"))
