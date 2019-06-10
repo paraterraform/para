@@ -1,4 +1,4 @@
-package app
+package transport
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ const (
 	schemaHttps = "https://"
 )
 
-func openUrl(url string) (io.ReadCloser, error) {
+func OpenUrl(url string) (io.ReadCloser, error) {
 	var err error
 	var reader io.ReadCloser
 

@@ -119,8 +119,8 @@ Concepts
     Cache dir facilitates offline operation. 
 
   Config File
-    Any of the flags below (except for config itself and help flag) can be provided via a config file. It's if value is
-    not provided via a flag, config file is discovered from one of pre-defined locations.
+    Any of the flags below (except for config itself as well as help and unmount flags) can be provided via a config
+    file. It's if value is not provided via a flag, config file is discovered from one of pre-defined locations.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(optionUnmount) > 0 {
@@ -146,7 +146,14 @@ Concepts
 			indexCandidates = defaultIndexCandidates
 		}
 
-		app.Execute(args, indexCandidates, optionCachePath)
+		var extensionsCandidates []string
+		if len(optionExtensions) > 0 {
+			extensionsCandidates = append(extensionsCandidates, optionExtensions)
+		} else {
+			extensionsCandidates = defaultExtensionsCandidates
+		}
+
+		app.Execute(args, indexCandidates, extensionsCandidates, optionCachePath)
 	},
 }
 
@@ -208,6 +215,7 @@ func init() {
 	)
 
 	_ = viper.BindPFlag("index", rootCmd.Flags().Lookup("index"))
+	_ = viper.BindPFlag("extensions", rootCmd.Flags().Lookup("extensions"))
 	_ = viper.BindPFlag("cache", rootCmd.Flags().Lookup("cache"))
 }
 

@@ -4,6 +4,7 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	"fmt"
+	"github.com/paraterraform/para/app/index"
 	"golang.org/x/net/context"
 	"os"
 )
@@ -17,7 +18,7 @@ const (
 // FUSE
 
 type FS struct {
-	index *Index
+	index *index.RuntimeIndex
 }
 
 func (fs FS) Root() (fs.Node, error) {
@@ -67,7 +68,7 @@ func (d Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 
 // File implements both Node and Handle for the hello file.
 type File struct {
-	plugin *Plugin
+	plugin *index.Plugin
 	fs     *FS
 }
 

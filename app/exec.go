@@ -5,13 +5,12 @@ import (
 	"bazil.org/fuse/fs"
 	"fmt"
 	"github.com/mitchellh/go-homedir"
+	"github.com/paraterraform/para/app/index"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-
 	"strings"
 	"syscall"
 )
@@ -26,14 +25,15 @@ var pluginDirCandidates = []string{
 	pathPluginDirUser,
 }
 
-func Execute(args []string, indices []string, customCachePath string) {
+func Execute(args []string, primaryIndexCandidates, indexExtensions []string, customCachePath string) {
 	var pluginDir string
 	var mountpoint *string
 	var stat os.FileInfo
 	var err error
 
-	log.SetFlags(0)
+	fmt.Printf("Para is being initialized:\n")
 
+	// Plugin Dir
 	for _, pluginDir = range pluginDirCandidates {
 		expandedPath, err := homedir.Expand(pluginDir)
 		if err != nil {
@@ -44,8 +44,6 @@ func Execute(args []string, indices []string, customCachePath string) {
 			break
 		}
 	}
-
-	log.Printf("Para is being initialized...")
 
 	if mountpoint == nil {
 		fmt.Printf(
@@ -67,7 +65,7 @@ func Execute(args []string, indices []string, customCachePath string) {
 	// Check if plugin dir is in use
 	pidBytes, err := ioutil.ReadFile(filepath.Join(*mountpoint, FileMeta))
 	if os.IsNotExist(err) {
-		log.Printf("  - Plugin Dir: %s", pluginDir)
+		fmt.Printf("  - Plugin Dir: %s\n", pluginDir)
 	} else {
 		if err != nil {
 			fmt.Printf(
@@ -89,6 +87,7 @@ func Execute(args []string, indices []string, customCachePath string) {
 		os.Exit(1)
 	}
 
+	// Cache Dir
 	cacheDir, err := discoverCacheDir(customCachePath)
 	if err != nil {
 		fmt.Printf(
@@ -97,17 +96,31 @@ func Execute(args []string, indices []string, customCachePath string) {
 		)
 		os.Exit(1)
 	}
-	log.Printf("  - Cache Dir: %s", cacheDir)
+	fmt.Printf("  - Cache Dir: %s\n", cacheDir)
 
-	index, location, err := DiscoverIndex(indices, cacheDir)
+	// Primary Index
+	kindNameIndex, location, err := index.DiscoverIndex(primaryIndexCandidates)
 	if err != nil {
 		fmt.Printf(" * Error: cannnot decode primary index at '%s' as a valid YAML map: %s\n", location, err)
 	}
-	log.Printf("  - Primary Index: %s", location)
-	log.Printf("  - Command: %s", strings.Join(args, " "))
-	log.Printf("")
-	log.Printf(strings.Repeat("-", 72))
-	log.Printf("")
+	fmt.Printf("  - Primary Index: %s\n", location)
+
+	// Index Extensions
+	fmt.Printf("  - Index Extensions:\n")
+	loadedExtensions, failedExtensions := loadExtensions(kindNameIndex, indexExtensions)
+	for _, ext := range indexExtensions {
+		countLoaded := loadedExtensions[ext]
+		countFailed := failedExtensions[ext]
+		fmt.Printf("     %s: loaded %d, errors %d\n", ext, countLoaded, countFailed)
+	}
+
+	// Command
+	fmt.Printf("  - Command: %s\n", strings.Join(args, " "))
+
+	// Footer
+	fmt.Println()
+	fmt.Println(strings.Repeat("-", 72))
+	fmt.Println()
 
 	// Init sub-process
 	cmd := exec.Command(args[0], args[1:]...)
@@ -118,14 +131,15 @@ func Execute(args []string, indices []string, customCachePath string) {
 	go func() {
 		for sig := range signalChan {
 			if err := cmd.Process.Signal(sig); err != nil {
-				log.Printf("Unable to forward signal: %s", err) // TODO trace instead of log
+				fmt.Printf("* Para is unable to forward signal: %s", err) // TODO trace instead of log
 			}
 		}
 	}()
 	//
-	ready, err := mountPluginsDir(*index, *mountpoint)
+	ready, err := mountPluginsDir(kindNameIndex.BuildPlatformIndex(cacheDir), *mountpoint)
 	if err != nil {
-		log.Fatalf("Para was unable to mount plugin FS over '%s': %s", pluginDir, err)
+		fmt.Printf("* Para was unable to mount plugin FS over '%s': %s", pluginDir, err)
+		os.Exit(1)
 	}
 	<-ready
 
@@ -142,12 +156,41 @@ func Execute(args []string, indices []string, customCachePath string) {
 				os.Exit(status.ExitStatus())
 			}
 		}
-		log.Fatalf(
+		fmt.Printf(
 			"Para was not able to execute <%s> and failed with an error: %s",
 			strings.Join(args, " "),
 			err,
 		)
+		os.Exit(1)
 	}
+}
+
+func loadExtensions(index *index.LoadingIndex, extensions []string) (loaded map[string]uint64, failed map[string]uint64) {
+	loaded = make(map[string]uint64)
+	failed = make(map[string]uint64)
+
+	for idx := len(extensions) - 1; idx >= 0; idx-- {
+		path := extensions[idx]
+		expandedPath, err := homedir.Expand(path)
+		if err != nil {
+			continue
+		}
+		matches, _ := ioutil.ReadDir(expandedPath)
+		for _, ext := range matches {
+			if ext.IsDir() { // TODO trace
+				failed[path] += 1
+				continue
+			}
+
+			err := index.LoadExtension(filepath.Join(expandedPath, ext.Name()))
+			if err != nil {
+				failed[path] += 1
+			} else {
+				loaded[path] += 1
+			}
+		}
+	}
+	return
 }
 
 func discoverCacheDir(customPath string) (string, error) {
@@ -158,8 +201,7 @@ func discoverCacheDir(customPath string) (string, error) {
 	if err != nil {
 		userCacheDirForPara := filepath.Join(userCacheDir, "para")
 		if pathExists(userCacheDirForPara) {
-			// TODO verify it's writable?
-			return userCacheDirForPara, nil
+			return userCacheDirForPara, nil // TODO verify it's writable?
 		}
 	}
 	path := filepath.Join(os.TempDir(), fmt.Sprintf("para-%v", os.Geteuid()))
@@ -172,17 +214,16 @@ func pathExists(path string) bool {
 		return false
 	}
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		// TODO verify it's writable?
-		return true
+		return true // TODO verify it's writable?
 	}
 	return false
 }
 
-func mountPluginsDir(index Index, mountpoint string) (<-chan struct{}, error) {
+func mountPluginsDir(index *index.RuntimeIndex, mountpoint string) (<-chan struct{}, error) {
 	c, err := fuse.Mount(
 		mountpoint,
 		fuse.VolumeName("Terraform Plugins"),
-		fuse.FSName("terraform-plugins"),
+		fuse.FSName("terraform-platformToPlugins"),
 		fuse.Subtype("para"),
 		fuse.LocalVolume(),
 		fuse.ReadOnly(),
@@ -196,21 +237,24 @@ func mountPluginsDir(index Index, mountpoint string) (<-chan struct{}, error) {
 	return c.Ready, nil
 }
 
-func fuseRun(index Index, c *fuse.Conn) {
+func fuseRun(index *index.RuntimeIndex, c *fuse.Conn) {
 	defer func() {
 		if err := c.Close(); err != nil {
-			log.Fatal(err)
+			fmt.Printf("* [ASYNC] Para encountered an error: %s", err)
+			os.Exit(1)
 		}
 	}()
 
-	err := fs.Serve(c, FS{index: &index})
+	err := fs.Serve(c, FS{index: index})
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("* [ASYNC] Para encountered an error: %s", err)
+		os.Exit(1)
 	}
 
 	// check if the mount process has an error to report
 	<-c.Ready
 	if err := c.MountError; err != nil {
-		log.Fatal(err)
+		fmt.Printf("* [ASYNC] Para encountered an error: %s", err)
+		os.Exit(1)
 	}
 }
