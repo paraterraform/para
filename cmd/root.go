@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -64,6 +65,7 @@ var optionIndex string
 var optionConfig string
 var optionExtensions string
 var optionUnmount string
+var optionRefresh time.Duration
 
 var rootCmd = &cobra.Command{
 
@@ -153,7 +155,7 @@ Concepts
 			extensionsCandidates = defaultExtensionsCandidates
 		}
 
-		app.Execute(args, indexCandidates, extensionsCandidates, optionCachePath)
+		app.Execute(args, indexCandidates, extensionsCandidates, optionCachePath, optionRefresh)
 	},
 }
 
@@ -206,6 +208,13 @@ func init() {
 		"",
 		"cache dir (default - ~/.cache/para if exists or /tmp/para-$UID)",
 	)
+	rootCmd.Flags().DurationVarP(
+		&optionRefresh,
+		"refresh",
+		"r",
+		time.Hour,
+		"attempt to refresh remote indices every given interval",
+	)
 	rootCmd.Flags().StringVarP(
 		&optionUnmount,
 		"unmount",
@@ -217,6 +226,7 @@ func init() {
 	_ = viper.BindPFlag("index", rootCmd.Flags().Lookup("index"))
 	_ = viper.BindPFlag("extensions", rootCmd.Flags().Lookup("extensions"))
 	_ = viper.BindPFlag("cache", rootCmd.Flags().Lookup("cache"))
+	_ = viper.BindPFlag("refresh", rootCmd.Flags().Lookup("refresh"))
 }
 
 func initConfig() {

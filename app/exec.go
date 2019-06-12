@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 )
 
 const (
@@ -25,7 +26,7 @@ var pluginDirCandidates = []string{
 	pathPluginDirUser,
 }
 
-func Execute(args []string, primaryIndexCandidates, indexExtensions []string, customCachePath string) {
+func Execute(args []string, primaryIndexCandidates, indexExtensions []string, customCachePath string, refresh time.Duration) {
 	var pluginDir string
 	var mountpoint *string
 	var stat os.FileInfo
@@ -99,7 +100,7 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 	fmt.Printf("  - Cache Dir: %s\n", cacheDir)
 
 	// Primary Index
-	kindNameIndex, location, err := index.DiscoverIndex(primaryIndexCandidates, cacheDir)
+	kindNameIndex, location, err := index.DiscoverIndex(primaryIndexCandidates, cacheDir, refresh)
 	if err != nil {
 		fmt.Printf(" * Error: cannnot decode primary index at '%s' as a valid YAML map: %s\n", location, err)
 		os.Exit(1)
@@ -108,7 +109,7 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 
 	// Index Extensions
 	fmt.Printf("  - Index Extensions:\n")
-	loadedExtensions, failedExtensions := loadExtensions(kindNameIndex, indexExtensions)
+	loadedExtensions, failedExtensions := loadExtensions(kindNameIndex, indexExtensions, refresh)
 	for _, ext := range indexExtensions {
 		countLoaded := loadedExtensions[ext]
 		countFailed := failedExtensions[ext]
@@ -166,7 +167,7 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 	}
 }
 
-func loadExtensions(index *index.LoadingIndex, extensions []string) (loaded map[string]uint64, failed map[string]uint64) {
+func loadExtensions(index *index.LoadingIndex, extensions []string, refresh time.Duration) (loaded map[string]uint64, failed map[string]uint64) {
 	loaded = make(map[string]uint64)
 	failed = make(map[string]uint64)
 
@@ -183,7 +184,7 @@ func loadExtensions(index *index.LoadingIndex, extensions []string) (loaded map[
 				continue
 			}
 
-			err := index.LoadExtension(filepath.Join(expandedPath, ext.Name()))
+			err := index.LoadExtension(filepath.Join(expandedPath, ext.Name()), refresh)
 			if err != nil {
 				failed[path] += 1
 			} else {

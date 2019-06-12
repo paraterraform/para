@@ -22,7 +22,7 @@ type LoadingIndex struct {
 	kindToNameToPlugins map[string]map[string][]*Plugin
 }
 
-func DiscoverIndex(candidates []string, cacheDir string) (*LoadingIndex, string, error) {
+func DiscoverIndex(candidates []string, cacheDir string, refresh time.Duration) (*LoadingIndex, string, error) {
 	var content []byte
 	var location string
 	var err error
@@ -32,7 +32,7 @@ func DiscoverIndex(candidates []string, cacheDir string) (*LoadingIndex, string,
 			continue
 		}
 
-		content, err = openIndex(location, cacheDir)
+		content, err = openIndex(location, cacheDir, refresh)
 		if err != nil {
 			continue
 		}
@@ -46,11 +46,11 @@ func DiscoverIndex(candidates []string, cacheDir string) (*LoadingIndex, string,
 		)
 	}
 
-	index, err := newLoadingIndex(content, cacheDir)
+	index, err := newLoadingIndex(content, cacheDir, refresh)
 	return index, location, err
 }
 
-func openIndex(location string, cacheDir string) ([]byte, error) {
+func openIndex(location string, cacheDir string, refresh time.Duration) ([]byte, error) {
 	if xio.IsRemote(location) {
 		indexCacheDir := filepath.Join(cacheDir, "index")
 		indexCachePath := filepath.Join(indexCacheDir, crypto.DefaultStringHash(location))
@@ -58,7 +58,8 @@ func openIndex(location string, cacheDir string) ([]byte, error) {
 		cacheData, errCacheData := ioutil.ReadFile(indexCachePath)
 		cacheMeta, errCacheMeta := os.Stat(indexCachePath)
 
-		if errCacheMeta != nil || cacheMeta.ModTime().Before(time.Now().Add(-1*time.Minute)) || errCacheData != nil {
+		maxAge := time.Duration(refresh) * time.Minute
+		if errCacheMeta != nil || cacheMeta.ModTime().Before(time.Now().Add(-maxAge)) || errCacheData != nil {
 			freshData, errFreshData := xio.UrlReadAll(location)
 			if errFreshData != nil {
 				if errCacheData != nil {
@@ -79,7 +80,7 @@ func openIndex(location string, cacheDir string) ([]byte, error) {
 	}
 }
 
-func newLoadingIndex(raw []byte, cacheDir string) (*LoadingIndex, error) {
+func newLoadingIndex(raw []byte, cacheDir string, refresh time.Duration) (*LoadingIndex, error) {
 	var parsed map[string]interface{}
 
 	err := yml.Unmarshal(raw, &parsed)
@@ -98,7 +99,7 @@ func newLoadingIndex(raw []byte, cacheDir string) (*LoadingIndex, error) {
 		}
 
 		for name, versionsSpec := range kindMap {
-			plugins := parseVersions(kind, name, versionsSpec, cacheDir)
+			plugins := parseVersions(kind, name, versionsSpec, cacheDir, refresh)
 			kindToNameToPlugins[kind][name] = append(kindToNameToPlugins[kind][name], plugins...)
 		}
 	}
@@ -110,7 +111,7 @@ func newLoadingIndex(raw []byte, cacheDir string) (*LoadingIndex, error) {
 	}, nil
 }
 
-func parseVersions(kind, name string, versions interface{}, cacheDir string) (result []*Plugin) {
+func parseVersions(kind, name string, versions interface{}, cacheDir string, refresh time.Duration) (result []*Plugin) {
 	var versionMap map[string]interface{}
 
 	versionMap, versionSpecIsOk := versions.(map[string]interface{})
@@ -119,7 +120,7 @@ func parseVersions(kind, name string, versions interface{}, cacheDir string) (re
 		if !versionIndexUrlOk {
 			return
 		}
-		versionSpecBytes, err := openIndex(versionIndexUrl, cacheDir)
+		versionSpecBytes, err := openIndex(versionIndexUrl, cacheDir, refresh)
 		if err != nil {
 			return
 		}
@@ -175,7 +176,7 @@ func parseVersions(kind, name string, versions interface{}, cacheDir string) (re
 	return
 }
 
-func (i *LoadingIndex) LoadExtension(path string) error {
+func (i *LoadingIndex) LoadExtension(path string, refresh time.Duration) error {
 	filename := filepath.Base(path)
 	if strings.ToLower(filename) != filename {
 		return fmt.Errorf("extension file must be in lowercase: '%s'", filename)
@@ -201,7 +202,7 @@ func (i *LoadingIndex) LoadExtension(path string) error {
 		return err
 	}
 
-	plugins := parseVersions(kind, name, versionsSpec, i.cacheDir)
+	plugins := parseVersions(kind, name, versionsSpec, i.cacheDir, refresh)
 
 	if _, ok := i.kindToNameToPlugins[kind]; !ok {
 		i.kindToNameToPlugins[kind] = make(map[string][]*Plugin)
