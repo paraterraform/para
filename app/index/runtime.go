@@ -3,7 +3,7 @@ package index
 import (
 	"fmt"
 	"github.com/paraterraform/para/app/crypto"
-	"github.com/paraterraform/para/app/transport"
+	"github.com/paraterraform/para/app/xio"
 	"io"
 	"os"
 	"path/filepath"
@@ -42,7 +42,7 @@ func (i *RuntimeIndex) LookupPlugin(platform, filename string) *Plugin {
 }
 
 func (i RuntimeIndex) getPluginFilePath(plugin *Plugin) string {
-	return filepath.Join(i.cacheDir, plugin.Kind, plugin.Name, plugin.Version, plugin.Platform)
+	return filepath.Join(i.cacheDir, "plugins", plugin.Kind, plugin.Name, plugin.Version, plugin.Platform)
 }
 
 func (i *RuntimeIndex) OpenPlugin(plugin *Plugin) error {
@@ -118,7 +118,7 @@ func (i *RuntimeIndex) ClosePlugin(plugin *Plugin) error {
 
 func downloadPlugin(url string, saveTo string) error {
 	// Get the data
-	pluginData, err := transport.OpenUrl(url)
+	pluginData, err := xio.UrlOpen(url)
 	if err != nil {
 		return err
 	}

@@ -99,9 +99,10 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 	fmt.Printf("  - Cache Dir: %s\n", cacheDir)
 
 	// Primary Index
-	kindNameIndex, location, err := index.DiscoverIndex(primaryIndexCandidates)
+	kindNameIndex, location, err := index.DiscoverIndex(primaryIndexCandidates, cacheDir)
 	if err != nil {
 		fmt.Printf(" * Error: cannnot decode primary index at '%s' as a valid YAML map: %s\n", location, err)
+		os.Exit(1)
 	}
 	fmt.Printf("  - Primary Index: %s\n", location)
 
@@ -136,7 +137,7 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 		}
 	}()
 	//
-	ready, err := mountPluginsDir(kindNameIndex.BuildPlatformIndex(cacheDir), *mountpoint)
+	ready, err := mountPluginsDir(kindNameIndex.BuildPlatformIndex(), *mountpoint)
 	if err != nil {
 		fmt.Printf("* Para was unable to mount plugin FS over '%s': %s", pluginDir, err)
 		os.Exit(1)

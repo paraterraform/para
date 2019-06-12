@@ -2,14 +2,15 @@ package index
 
 import (
 	"fmt"
-	"github.com/mitchellh/go-homedir"
-	"github.com/paraterraform/para/app/transport"
+	"github.com/paraterraform/para/app/crypto"
+	"github.com/paraterraform/para/app/xio"
 	yml "gopkg.in/ashald/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const fieldUrl = "url"
@@ -17,10 +18,11 @@ const fieldSize = "size"
 const fieldDigest = "digest"
 
 type LoadingIndex struct {
+	cacheDir            string
 	kindToNameToPlugins map[string]map[string][]*Plugin
 }
 
-func DiscoverIndex(candidates []string) (*LoadingIndex, string, error) {
+func DiscoverIndex(candidates []string, cacheDir string) (*LoadingIndex, string, error) {
 	var content []byte
 	var location string
 	var err error
@@ -30,18 +32,11 @@ func DiscoverIndex(candidates []string) (*LoadingIndex, string, error) {
 			continue
 		}
 
-		expandedPath, err := homedir.Expand(location)
-
-		reader, err := transport.OpenUrl(expandedPath)
+		content, err = openIndex(location, cacheDir)
 		if err != nil {
 			continue
 		}
-
-		content, err = ioutil.ReadAll(reader)
-		_ = reader.Close() // What can possibly go wrong?
-		if err == nil {
-			break
-		}
+		break
 	}
 
 	if content == nil {
@@ -51,11 +46,40 @@ func DiscoverIndex(candidates []string) (*LoadingIndex, string, error) {
 		)
 	}
 
-	index, err := newLoadingIndex(content)
+	index, err := newLoadingIndex(content, cacheDir)
 	return index, location, err
 }
 
-func newLoadingIndex(raw []byte) (*LoadingIndex, error) {
+func openIndex(location string, cacheDir string) ([]byte, error) {
+	if xio.IsRemote(location) {
+		indexCacheDir := filepath.Join(cacheDir, "index")
+		indexCachePath := filepath.Join(indexCacheDir, crypto.DefaultStringHash(location))
+
+		cacheData, errCacheData := ioutil.ReadFile(indexCachePath)
+		cacheMeta, errCacheMeta := os.Stat(indexCachePath)
+
+		if errCacheMeta != nil || cacheMeta.ModTime().Before(time.Now().Add(-1*time.Minute)) || errCacheData != nil {
+			freshData, errFreshData := xio.UrlReadAll(location)
+			if errFreshData != nil {
+				if errCacheData != nil {
+					return nil, errFreshData // we're not sure our cache is valid and failed to fetch so just fail
+				}
+				// failed to fetch but there is _some_ kind of a cache - just return it
+				return cacheData, nil
+			}
+			// we fetched fresh data - let's try to cache it but don't sweat if fail
+			_ = os.MkdirAll(indexCacheDir, 0755)
+			_ = ioutil.WriteFile(indexCachePath, freshData, 0644)
+			return freshData, nil
+		} else {
+			return cacheData, nil
+		}
+	} else {
+		return xio.UrlReadAll(location)
+	}
+}
+
+func newLoadingIndex(raw []byte, cacheDir string) (*LoadingIndex, error) {
 	var parsed map[string]interface{}
 
 	err := yml.Unmarshal(raw, &parsed)
@@ -86,6 +110,7 @@ func newLoadingIndex(raw []byte) (*LoadingIndex, error) {
 
 	// TODO: verify collisions in a case-insensitive way
 	return &LoadingIndex{
+		cacheDir:            cacheDir,
 		kindToNameToPlugins: kindToNameToPlugins,
 	}, nil
 }
@@ -174,7 +199,7 @@ func (i *LoadingIndex) LoadExtension(path string) error {
 	return nil
 }
 
-func (i *LoadingIndex) BuildPlatformIndex(cacheDir string) *RuntimeIndex {
+func (i *LoadingIndex) BuildPlatformIndex() *RuntimeIndex {
 	platformToPlugins := make(map[string]map[string]*Plugin)
 
 	for _, nameToPlugins := range i.kindToNameToPlugins {
@@ -190,7 +215,7 @@ func (i *LoadingIndex) BuildPlatformIndex(cacheDir string) *RuntimeIndex {
 
 	return &RuntimeIndex{
 		platformToFilenameToPlugin: platformToPlugins,
-		cacheDir:                   cacheDir,
+		cacheDir:                   i.cacheDir,
 		openFiles:                  make(map[string]*os.File),
 		alreadyOpened:              make(map[string]bool),
 	}

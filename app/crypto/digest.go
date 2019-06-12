@@ -13,9 +13,9 @@ import (
 	"strings"
 )
 
-type NewHash = func() hash.Hash
+type newHash = func() hash.Hash
 
-var supportedHashes = map[string]NewHash{
+var supportedHashes = map[string]newHash{
 	"md5":    func() hash.Hash { return md5.New() },
 	"sha1":   func() hash.Hash { return sha1.New() },
 	"sha256": func() hash.Hash { return sha256.New() },

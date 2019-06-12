@@ -1,8 +1,9 @@
-package transport
+package xio
 
 import (
 	"fmt"
 	"github.com/mholt/archiver"
+	"github.com/mitchellh/go-homedir"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -17,14 +18,23 @@ const (
 	schemaHttps = "https://"
 )
 
-func OpenUrl(url string) (io.ReadCloser, error) {
+func IsRemote(url string) bool {
+	return strings.HasPrefix(url, schemaHttp) || strings.HasPrefix(url, schemaHttps)
+}
+
+func UrlOpen(url string) (io.ReadCloser, error) {
 	var err error
 	var reader io.ReadCloser
 
-	if strings.HasPrefix(url, schemaHttp) || strings.HasPrefix(url, schemaHttps) {
+	if IsRemote(url) {
 		resp, err := http.Get(url)
 		if err != nil {
 			return nil, err
+		} else if resp.StatusCode != 200 {
+			return nil, fmt.Errorf(
+				"non-200 response while fetching '%s': %s",
+				url, http.StatusText(resp.StatusCode),
+			)
 		}
 		reader = resp.Body
 	} else {
@@ -34,7 +44,12 @@ func OpenUrl(url string) (io.ReadCloser, error) {
 			path = url[len(schemaFile):]
 		}
 
-		reader, err = os.Open(path)
+		expandedPath, err := homedir.Expand(path)
+		if err != nil {
+			return nil, err
+		}
+
+		reader, err = os.Open(expandedPath)
 		if err != nil {
 			return nil, err
 		}
@@ -110,15 +125,11 @@ func OpenUrl(url string) (io.ReadCloser, error) {
 	return VolatileTempFile{file: uncompressedData}, nil
 }
 
-type VolatileTempFile struct {
-	file *os.File
-}
-
-func (f VolatileTempFile) Read(p []byte) (n int, err error) {
-	return f.file.Read(p)
-}
-
-func (f VolatileTempFile) Close() error {
-	defer func() { _ = os.Remove(f.file.Name()) }()
-	return f.file.Close()
+func UrlReadAll(url string) ([]byte, error) {
+	reader, err := UrlOpen(url)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = reader.Close() }()
+	return ioutil.ReadAll(reader)
 }
