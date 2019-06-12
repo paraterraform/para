@@ -98,12 +98,7 @@ func newLoadingIndex(raw []byte, cacheDir string) (*LoadingIndex, error) {
 		}
 
 		for name, versionsSpec := range kindMap {
-			versionMap, versionSpecIsOk := versionsSpec.(map[string]interface{})
-			if !versionSpecIsOk {
-				continue
-			}
-
-			plugins := parseVersions(kind, name, versionMap)
+			plugins := parseVersions(kind, name, versionsSpec, cacheDir)
 			kindToNameToPlugins[kind][name] = append(kindToNameToPlugins[kind][name], plugins...)
 		}
 	}
@@ -115,7 +110,25 @@ func newLoadingIndex(raw []byte, cacheDir string) (*LoadingIndex, error) {
 	}, nil
 }
 
-func parseVersions(kind, name string, versionMap map[string]interface{}) (result []*Plugin) {
+func parseVersions(kind, name string, versions interface{}, cacheDir string) (result []*Plugin) {
+	var versionMap map[string]interface{}
+
+	versionMap, versionSpecIsOk := versions.(map[string]interface{})
+	if !versionSpecIsOk {
+		versionIndexUrl, versionIndexUrlOk := versions.(string)
+		if !versionIndexUrlOk {
+			return
+		}
+		versionSpecBytes, err := openIndex(versionIndexUrl, cacheDir)
+		if err != nil {
+			return
+		}
+		err = yml.Unmarshal(versionSpecBytes, &versionMap)
+		if err != nil {
+			return
+		}
+	}
+
 	for version, platformsSpec := range versionMap {
 		platformsMap, platformsSpecIsOk := platformsSpec.(map[string]interface{})
 		if !platformsSpecIsOk {
@@ -177,18 +190,18 @@ func (i *LoadingIndex) LoadExtension(path string) error {
 	kind := tokens[0]
 	name := tokens[1]
 
-	var versionsMap map[string]interface{}
+	var versionsSpec interface{}
 
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	err = yml.Unmarshal(content, &versionsMap)
+	err = yml.Unmarshal(content, &versionsSpec)
 	if err != nil {
 		return err
 	}
 
-	plugins := parseVersions(kind, name, versionsMap)
+	plugins := parseVersions(kind, name, versionsSpec, i.cacheDir)
 
 	if _, ok := i.kindToNameToPlugins[kind]; !ok {
 		i.kindToNameToPlugins[kind] = make(map[string][]*Plugin)
