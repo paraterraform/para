@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -32,9 +33,10 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 	var stat os.FileInfo
 	var err error
 
-	fmt.Printf("Para is being initialized:\n")
+	fmt.Printf("Para is being initialized...\n")
 
 	// Plugin Dir
+	fmt.Printf("- Plugin Dir: ")
 	for _, pluginDir = range pluginDirCandidates {
 		expandedPath, err := homedir.Expand(pluginDir)
 		if err != nil {
@@ -48,7 +50,7 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 
 	if mountpoint == nil {
 		fmt.Printf(
-			"  Para is humble but it won't let itself be ignored! Please make sure that at least one of the "+
+			"\n* Para is humble but it won't let itself be ignored! Please make sure that at least one of the "+
 				"following dirs exists: %s.\n",
 			strings.Join(pluginDirCandidates, ", "),
 		)
@@ -57,7 +59,7 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 
 	if !stat.IsDir() {
 		fmt.Printf(
-			" * Error: the '%s' path exists but does not appear to be a directory - please see "+
+			"\n* Error: the '%s' path exists but does not appear to be a directory - please see "+
 				"https://www.terraform.io/docs/extend/how-terraform-works.html#plugin-locations\n",
 			*mountpoint,
 		)
@@ -66,20 +68,20 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 	// Check if plugin dir is in use
 	pidBytes, err := ioutil.ReadFile(filepath.Join(*mountpoint, FileMeta))
 	if os.IsNotExist(err) {
-		fmt.Printf("  - Plugin Dir: %s\n", pluginDir)
+		fmt.Println(pluginDir)
 	} else {
 		if err != nil {
 			fmt.Printf(
-				" * Error: the previous instance of Para failed and left '%s' in a bad shape - please "+
+				"\n* Error: the previous instance of Para failed and left '%s' in a bad shape - please "+
 					"run following command to clean up: para -u %s\n", pluginDir, pluginDir,
 			)
 		} else {
-			fmt.Printf(" * Error: another instance of Para (PID: %s) uses '%s' right now - "+
+			fmt.Printf("\n* Error: another instance of Para (PID: %s) uses '%s' right now - "+
 				"please wait until it will finish.\n", strings.TrimSpace(string(pidBytes)), pluginDir,
 			)
 			if pluginDir == pathPluginDirUser {
 				fmt.Printf(
-					"   If the other instance is running from another Terraform configuration - please "+
+					" If the other instance is running from another Terraform configuration - please "+
 						"consider creating '%s' within Terraform configuration dir to avoid contention over '%s'.\n",
 					pathPluginDirLocal, pathPluginDirUser,
 				)
@@ -89,35 +91,52 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 	}
 
 	// Cache Dir
+	fmt.Printf("- Cache Dir: ")
 	cacheDir, err := discoverCacheDir(customCachePath)
 	if err != nil {
 		fmt.Printf(
-			" * Error: Para requires a writable cache dir for operation but failed discovering one: %s\n",
+			"\n* Error: Para requires a writable cache dir for operation but failed discovering one: %s\n",
 			err,
 		)
 		os.Exit(1)
 	}
-	fmt.Printf("  - Cache Dir: %s\n", simplifyPath(cacheDir))
+	fmt.Println(simplifyPath(cacheDir))
 
 	// Primary Index
-	kindNameIndex, location, err := index.DiscoverIndex(primaryIndexCandidates, cacheDir, refresh)
+	fmt.Printf("- Primary Index: ")
+	loadingIndex, err := index.DiscoverIndex(primaryIndexCandidates, cacheDir, refresh)
 	if err != nil {
-		fmt.Printf(" * Error: cannnot decode primary index at '%s' as a valid YAML map: %s\n", location, err)
+		fmt.Printf("\n* Error: cannnot decode primary index as a valid YAML map: %s\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("  - Primary Index: %s\n", location)
+	var indexStats []string
+	for kind, nameToPlugins := range loadingIndex.KindToNameToPlugins {
+		indexStats = append(indexStats, fmt.Sprintf("%s: %d", kind, len(nameToPlugins)))
+	}
+	sort.Strings(indexStats)
+	fmt.Printf(
+		"%s as of %s (%s)\n",
+		loadingIndex.Location,
+		loadingIndex.Timestamp.Format(time.RFC3339),
+		strings.Join(indexStats, ", "),
+	)
 
 	// Index Extensions
-	fmt.Printf("  - Index Extensions:\n")
-	loadedExtensions, failedExtensions := loadExtensions(kindNameIndex, indexExtensions, refresh)
+	fmt.Printf("- Index Extensions: ")
+	loadedExtensions, failedExtensions := loadExtensions(loadingIndex, indexExtensions)
+	var extensionsStats []string
 	for _, ext := range indexExtensions {
 		countLoaded := loadedExtensions[ext]
 		countFailed := failedExtensions[ext]
-		fmt.Printf("     %s: loaded %d, errors %d\n", ext, countLoaded, countFailed)
+		extensionsStats = append(
+			extensionsStats,
+			fmt.Sprintf("%s (%d/%d)", ext, countLoaded, countLoaded+countFailed),
+		)
 	}
+	fmt.Printf("%s\n", strings.Join(extensionsStats, ", "))
 
 	// Command
-	fmt.Printf("  - Command: %s\n", strings.Join(args, " "))
+	fmt.Printf("- Command: %s\n", strings.Join(args, " "))
 
 	// Footer
 	fmt.Println()
@@ -138,7 +157,7 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 		}
 	}()
 	//
-	ready, err := mountPluginsDir(kindNameIndex.BuildPlatformIndex(), *mountpoint)
+	ready, err := mountPluginsDir(loadingIndex.BuildRuntimeIndex(), *mountpoint)
 	if err != nil {
 		fmt.Printf("* Para was unable to mount plugin FS over '%s': %s", pluginDir, err)
 		os.Exit(1)
@@ -167,7 +186,7 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 	}
 }
 
-func loadExtensions(index *index.LoadingIndex, extensions []string, refresh time.Duration) (loaded map[string]uint64, failed map[string]uint64) {
+func loadExtensions(index *index.LoadingIndex, extensions []string) (loaded map[string]uint64, failed map[string]uint64) {
 	loaded = make(map[string]uint64)
 	failed = make(map[string]uint64)
 
@@ -184,7 +203,7 @@ func loadExtensions(index *index.LoadingIndex, extensions []string, refresh time
 				continue
 			}
 
-			err := index.LoadExtension(filepath.Join(expandedPath, ext.Name()), refresh)
+			err := index.LoadExtension(filepath.Join(expandedPath, ext.Name()))
 			if err != nil {
 				failed[path] += 1
 			} else {
