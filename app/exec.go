@@ -97,7 +97,7 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 		)
 		os.Exit(1)
 	}
-	fmt.Printf("  - Cache Dir: %s\n", cacheDir)
+	fmt.Printf("  - Cache Dir: %s\n", simplifyPath(cacheDir))
 
 	// Primary Index
 	kindNameIndex, location, err := index.DiscoverIndex(primaryIndexCandidates, cacheDir, refresh)
@@ -209,16 +209,6 @@ func discoverCacheDir(customPath string) (string, error) {
 	path := filepath.Join(os.TempDir(), fmt.Sprintf("para-%v", os.Geteuid()))
 	err = os.MkdirAll(path, 0744)
 	return path, err
-}
-
-func pathExists(path string) bool {
-	if len(path) == 0 {
-		return false
-	}
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		return true // TODO verify it's writable?
-	}
-	return false
 }
 
 func mountPluginsDir(index *index.RuntimeIndex, mountpoint string) (<-chan struct{}, error) {
