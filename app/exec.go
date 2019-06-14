@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"github.com/paraterraform/para/app/index"
+	"github.com/paraterraform/para/utils"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -33,15 +34,11 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 	var stat os.FileInfo
 	var err error
 
-	fmt.Printf("Para is being initialized...\n")
-
 	// Plugin Dir
 	fmt.Printf("- Plugin Dir: ")
 	for _, pluginDir = range pluginDirCandidates {
-		expandedPath, err := homedir.Expand(pluginDir)
-		if err != nil {
-			continue
-		}
+		expandedPath := utils.PathExpand(pluginDir)
+
 		if stat, err = os.Stat(expandedPath); !os.IsNotExist(err) {
 			mountpoint = &expandedPath
 			break
@@ -100,7 +97,7 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 		)
 		os.Exit(1)
 	}
-	fmt.Println(simplifyPath(cacheDir))
+	fmt.Println(utils.PathSimplify(cacheDir))
 
 	// Primary Index
 	fmt.Printf("- Primary Index: ")
@@ -221,7 +218,7 @@ func discoverCacheDir(customPath string) (string, error) {
 	userCacheDir, err := os.UserCacheDir()
 	if err != nil {
 		userCacheDirForPara := filepath.Join(userCacheDir, "para")
-		if pathExists(userCacheDirForPara) {
+		if utils.PathExists(userCacheDirForPara) {
 			return userCacheDirForPara, nil // TODO verify it's writable?
 		}
 	}

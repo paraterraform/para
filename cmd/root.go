@@ -4,12 +4,23 @@ import (
 	"bazil.org/fuse"
 	"fmt"
 	"github.com/paraterraform/para/app"
+	"github.com/paraterraform/para/utils"
 	"github.com/spf13/viper"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+)
+
+const (
+	flagConfig = "config"
+	flagUnmount = "unmount"
+
+	flagIndex = "index"
+	flagExtensions = "extensions"
+	flagCache = "cache"
+	flagRefresh = "refresh"
 )
 
 const usageTemplate = `Flags:
@@ -43,29 +54,25 @@ Use "para -h/--help" for more information.
 
 var defaultConfigCandidates = []string{
 	"para.cfg.yaml",
-	"~/.para.cfg.yaml",
-	"/etc/para.cfg.yaml",
+	"~/.para/para.cfg.yaml",
+	"/etc/para/para.cfg.yaml",
 }
 
 var defaultIndexCandidates = []string{
 	"para.idx.yaml",
-	"~/.para.idx.yaml",
-	"/etc/para.idx.yaml",
+	"~/.para/para.idx.yaml",
+	"/etc/para/para.idx.yaml",
 	"https://raw.githubusercontent.com/paraterraform/index/master/para.idx.yaml",
 }
 
 var defaultExtensionsCandidates = []string{
-	"para.d",
-	"~/.para.d",
-	"/etc/para.d",
+	"para.idx.d",
+	"~/.para/para.idx.d",
+	"/etc/para/para.idx.d",
 }
 
-var optionCachePath string
-var optionIndex string
 var optionConfig string
-var optionExtensions string
 var optionUnmount string
-var optionRefresh time.Duration
 
 var rootCmd = &cobra.Command{
 
@@ -141,20 +148,23 @@ Concepts
 		}
 
 		var indexCandidates []string
-
-		if len(optionConfig) > 0 {
-			indexCandidates = append(indexCandidates, optionConfig)
+		optionIndex := viper.GetString(flagIndex)
+		if len(optionIndex) > 0 {
+			indexCandidates = append(indexCandidates, optionIndex)
 		} else {
 			indexCandidates = defaultIndexCandidates
 		}
 
 		var extensionsCandidates []string
+		optionExtensions := viper.GetString(flagExtensions)
 		if len(optionExtensions) > 0 {
 			extensionsCandidates = append(extensionsCandidates, optionExtensions)
 		} else {
 			extensionsCandidates = defaultExtensionsCandidates
 		}
 
+		optionCachePath := viper.GetString(flagCache)
+		optionRefresh := viper.GetDuration(flagRefresh)
 		app.Execute(args, indexCandidates, extensionsCandidates, optionCachePath, optionRefresh)
 	},
 }
@@ -167,13 +177,15 @@ func Execute() {
 }
 
 func init() {
-	//cobra.OnInitialize(initConfig) // TODO - reactivate
+	fmt.Println("Para is being initialized...")
+
+	cobra.OnInitialize(initConfig)
 	rootCmd.Flags().SetInterspersed(false)
 	rootCmd.Flags().SortFlags = false
 	rootCmd.SetUsageTemplate(usageTemplate)
 	rootCmd.Flags().StringVarP(
 		&optionConfig,
-		"config",
+		flagConfig,
 		"f",
 		"",
 		fmt.Sprintf(
@@ -181,9 +193,8 @@ func init() {
 			strings.Join(defaultConfigCandidates, ", "),
 		),
 	)
-	rootCmd.Flags().StringVarP(
-		&optionIndex,
-		"index",
+	rootCmd.Flags().StringP(
+		flagIndex,
 		"i",
 		"",
 		fmt.Sprintf(
@@ -191,9 +202,8 @@ func init() {
 			strings.Join(defaultIndexCandidates, ", "),
 		),
 	)
-	rootCmd.Flags().StringVarP(
-		&optionExtensions,
-		"extensions",
+	rootCmd.Flags().StringP(
+		flagExtensions,
 		"x",
 		"",
 		fmt.Sprintf(
@@ -201,54 +211,60 @@ func init() {
 			strings.Join(defaultExtensionsCandidates, ", "),
 		),
 	)
-	rootCmd.Flags().StringVarP(
-		&optionCachePath,
-		"cache",
+	rootCmd.Flags().StringP(
+		flagCache,
 		"c",
 		"",
 		"cache dir (default - ~/.cache/para if exists or /tmp/para-$UID)",
 	)
-	rootCmd.Flags().DurationVarP(
-		&optionRefresh,
-		"refresh",
+	rootCmd.Flags().DurationP(
+		flagRefresh,
 		"r",
 		time.Hour,
 		"attempt to refresh remote indices every given interval",
 	)
 	rootCmd.Flags().StringVarP(
 		&optionUnmount,
-		"unmount",
+		flagUnmount,
 		"u",
 		"",
 		"force unmount dir (just unmount the given dir and exit, all other flags and arguments ignored)",
 	)
 
-	_ = viper.BindPFlag("index", rootCmd.Flags().Lookup("index"))
-	_ = viper.BindPFlag("extensions", rootCmd.Flags().Lookup("extensions"))
-	_ = viper.BindPFlag("cache", rootCmd.Flags().Lookup("cache"))
-	_ = viper.BindPFlag("refresh", rootCmd.Flags().Lookup("refresh"))
+	_ = viper.BindPFlag(flagIndex, rootCmd.Flags().Lookup(flagIndex))
+	_ = viper.BindPFlag(flagExtensions, rootCmd.Flags().Lookup(flagExtensions))
+	_ = viper.BindPFlag(flagCache, rootCmd.Flags().Lookup(flagCache))
+	_ = viper.BindPFlag(flagRefresh, rootCmd.Flags().Lookup(flagRefresh))
 }
 
 func initConfig() {
-	//// Don't forget to read config either from cfgFile or from home directory!
-	//if cfgFile != "" {
-	//	// Use config file from the flag.
-	//	viper.SetConfigFile(cfgFile)
-	//} else {
-	//	// Find home directory.
-	//	home, err := homedir.Dir()
-	//	if err != nil {
-	//		fmt.Println(err)
-	//		os.Exit(1)
-	//	}
-	//
-	//	// Search config in home directory with name ".cobra" (without extension).
-	//	viper.AddConfigPath(home)
-	//	viper.SetConfigName("para.cfg.yaml")
-	//}
-	//
-	//if err := viper.ReadInConfig(); err != nil {
-	//	fmt.Println("Can't read config:", err)
-	//	os.Exit(1)
-	//}
+	var candidates []string
+	var selected string
+
+	// Don't forget to read config either from cfgFile or from home directory!
+	if optionConfig != "" {
+		candidates = []string{optionConfig}
+		// Use config file from the flag.
+		//
+	} else {
+		candidates = defaultConfigCandidates
+	}
+
+	// For now just sticking with YAML
+	// TODO consider using viper to parse all configs and therefore support more formats
+	for _, path := range candidates {
+		expanded := utils.PathExpand(path)
+		if utils.PathExists(expanded) {
+			selected = expanded
+		}
+	}
+
+	if selected != "" {
+		fmt.Println("- Config File:", utils.PathSimplify(selected))
+		viper.SetConfigFile(selected)
+		if err := viper.ReadInConfig(); err != nil {
+			fmt.Println("* Can't read config:", err)
+			os.Exit(1)
+		}
+	}
 }

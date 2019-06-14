@@ -2,8 +2,7 @@ package index
 
 import (
 	"fmt"
-	"github.com/paraterraform/para/app/crypto"
-	"github.com/paraterraform/para/app/xio"
+	"github.com/paraterraform/para/utils"
 	yml "gopkg.in/ashald/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -62,9 +61,9 @@ func DiscoverIndex(candidates []string, cacheDir string, refresh time.Duration) 
 }
 
 func openIndex(location string, cacheDir string, refresh time.Duration) ([]byte, time.Time, error) {
-	if xio.IsRemote(location) {
+	if utils.UrlIsRemote(location) {
 		indexCacheDir := filepath.Join(cacheDir, "index")
-		indexCachePath := filepath.Join(indexCacheDir, crypto.DefaultStringHash(location))
+		indexCachePath := filepath.Join(indexCacheDir, utils.HashString(location))
 
 		cacheData, errCacheData := ioutil.ReadFile(indexCachePath)
 		cacheMeta, errCacheMeta := os.Stat(indexCachePath)
@@ -77,7 +76,7 @@ func openIndex(location string, cacheDir string, refresh time.Duration) ([]byte,
 
 		maxAge := time.Duration(refresh) * time.Minute
 		if cacheTimestamp.Before(time.Now().Add(-maxAge)) || errCacheData != nil {
-			freshData, errFreshData := xio.UrlReadAll(location)
+			freshData, errFreshData := utils.UrlReadAll(location)
 			if errFreshData != nil {
 				if errCacheData != nil {
 					return nil, time.Now(), errFreshData // we're not sure our cache is valid and failed to fetch so just fail
@@ -93,7 +92,7 @@ func openIndex(location string, cacheDir string, refresh time.Duration) ([]byte,
 			return cacheData, cacheTimestamp, nil
 		}
 	} else {
-		data, err := xio.UrlReadAll(location)
+		data, err := utils.UrlReadAll(location)
 		return data, time.Now(), err
 	}
 }

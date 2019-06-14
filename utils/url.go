@@ -1,4 +1,4 @@
-package xio
+package utils
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ const (
 	schemaHttps = "https://"
 )
 
-func IsRemote(url string) bool {
+func UrlIsRemote(url string) bool {
 	return strings.HasPrefix(url, schemaHttp) || strings.HasPrefix(url, schemaHttps)
 }
 
@@ -26,7 +26,7 @@ func UrlOpen(url string) (io.ReadCloser, error) {
 	var err error
 	var reader io.ReadCloser
 
-	if IsRemote(url) {
+	if UrlIsRemote(url) {
 		resp, err := http.Get(url)
 		if err != nil {
 			return nil, err

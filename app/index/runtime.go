@@ -2,8 +2,7 @@ package index
 
 import (
 	"fmt"
-	"github.com/paraterraform/para/app/crypto"
-	"github.com/paraterraform/para/app/xio"
+	"github.com/paraterraform/para/utils"
 	"io"
 	"os"
 	"path/filepath"
@@ -118,7 +117,7 @@ func (i *RuntimeIndex) ClosePlugin(plugin *Plugin) error {
 
 func downloadPlugin(url string, saveTo string) error {
 	// Get the data
-	pluginData, err := xio.UrlOpen(url)
+	pluginData, err := utils.UrlOpen(url)
 	if err != nil {
 		return err
 	}
@@ -152,7 +151,7 @@ func verifyPlugin(path string, size uint64, digest string) error {
 	}
 
 	if len(digest) > 0 {
-		return crypto.CheckDigest(path, digest)
+		return utils.DigestVerify(path, digest)
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-package crypto
+package utils
 
 import (
 	"crypto/md5"
@@ -22,7 +22,7 @@ var supportedHashes = map[string]newHash{
 	"sha512": func() hash.Hash { return sha512.New() },
 }
 
-func CheckDigest(path, digest string) error {
+func DigestVerify(path, digest string) error {
 	tokens := strings.SplitN(digest, ":", 2)
 	if _, ok := supportedHashes[tokens[0]]; len(tokens) != 2 || !ok {
 		var algsSlice []string
