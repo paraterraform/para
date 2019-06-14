@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -18,8 +18,10 @@ func PathExists(path string) bool {
 }
 
 func PathSimplify(path string) string {
-	if strings.HasPrefix(path, os.TempDir()) {
-		return fmt.Sprintf("$TMPDIR/%s", path[len(os.TempDir()):])
+	if tmpDir := os.Getenv("TMPDIR"); tmpDir != "" {
+		if strings.HasPrefix(path, tmpDir) {
+			return filepath.Join("$TMPDIR", path[len(os.TempDir()):])
+		}
 	}
 
 	home, err := homedir.Dir()
@@ -27,7 +29,7 @@ func PathSimplify(path string) string {
 		return path
 	}
 	if strings.HasPrefix(path, home) {
-		return fmt.Sprintf("~%s", path[len(home):])
+		return filepath.Join("~", path[len(home):])
 	}
 	return path
 }
