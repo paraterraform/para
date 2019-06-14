@@ -14,13 +14,13 @@ import (
 )
 
 const (
-	flagConfig = "config"
+	flagConfig  = "config"
 	flagUnmount = "unmount"
 
-	flagIndex = "index"
+	flagIndex      = "index"
 	flagExtensions = "extensions"
-	flagCache = "cache"
-	flagRefresh = "refresh"
+	flagCache      = "cache"
+	flagRefresh    = "refresh"
 )
 
 const usageTemplate = `Flags:
