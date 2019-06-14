@@ -99,6 +99,9 @@ func UrlOpen(url string) (io.ReadCloser, error) {
 	}
 
 	err = archiver.Walk(rawData.Name(), func(f archiver.File) error {
+		if !strings.HasPrefix(strings.ToLower(f.Name()), "terraform-") {
+			return nil
+		}
 		_, err = io.Copy(uncompressedData, f.ReadCloser)
 		if err != nil {
 			return err
