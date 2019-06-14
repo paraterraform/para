@@ -74,8 +74,7 @@ func openIndex(location string, cacheDir string, refresh time.Duration) ([]byte,
 			cacheTimestamp = cacheMeta.ModTime()
 		}
 
-		maxAge := time.Duration(refresh) * time.Minute
-		if cacheTimestamp.Before(time.Now().Add(-maxAge)) || errCacheData != nil {
+		if cacheTimestamp.Before(time.Now().Add(-refresh)) || errCacheData != nil {
 			freshData, errFreshData := utils.UrlReadAll(location)
 			if errFreshData != nil {
 				if errCacheData != nil {

@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- index cache not being refreshed even if it's older that the refresh interval 
 - `failed to read provider plugin ...: input/output error` on Linux due to improper handling of EOF 
 
 ## 0.2.0 - 2019-06-13
