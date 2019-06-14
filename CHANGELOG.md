@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Fixed
+
+- `failed to read provider plugin ...: input/output error` on Linux due to improper handling of EOF 
+
 ## 0.2.0 - 2019-06-13
 
 ### Changed

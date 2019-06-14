@@ -88,11 +88,9 @@ func (f File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadRe
 		return err
 	}
 
-	_, err = reader.ReadAt(dst, req.Offset)
-	if err != nil {
-		return err
-	}
-	resp.Data = dst
+	bytesRead, err := reader.ReadAt(dst, req.Offset)
+	resp.Data = dst[:bytesRead]
+
 	return nil
 }
 
