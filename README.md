@@ -21,12 +21,12 @@ Please note that FUSE must be available (macOS requires OSXFUSE - https://osxfus
 
 Just download the binary for your platform from the [latest release page](https://github.com/github.com/paraterraform/para/releases/latest) with `wget`:
 ```bash
-wget -O para "https://github.com/paraterraform/para/releases/download/v0.1.0/para_v0.1.0-$(uname -s | tr '[:upper:]' '[:lower:]')-amd64"
+wget -O para "https://github.com/paraterraform/para/releases/download/v0.1.0/para_v0.1.0_$(uname -s | tr '[:upper:]' '[:lower:]')-amd64"
 chmod +x para
 ```
 or `curl`:
 ```bash
-curl -Lo para "https://github.com/paraterraform/para/releases/download/v0.1.0/para_v0.1.0-$(uname -s | tr '[:upper:]' '[:lower:]')-amd64"
+curl -Lo para "https://github.com/paraterraform/para/releases/download/v0.1.0/para_v0.1.0_$(uname -s | tr '[:upper:]' '[:lower:]')-amd64"
 chmod +x para
 ```
 
