@@ -108,7 +108,7 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 	}
 	var indexStats []string
 	for kind, nameToPlugins := range loadingIndex.KindToNameToPlugins {
-		indexStats = append(indexStats, fmt.Sprintf("%s: %d", kind, len(nameToPlugins)))
+		indexStats = append(indexStats, fmt.Sprintf("%ss: %d", kind, len(nameToPlugins)))
 	}
 	sort.Strings(indexStats)
 	fmt.Printf(

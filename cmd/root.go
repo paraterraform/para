@@ -27,7 +27,8 @@ const usageTemplate = `Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}
 `
 
-const helpShort = `Para - the missing 3rd-party plugin manager for Terraform.
+const helpShort = `
+Para - the missing 3rd-party plugin manager for Terraform.
 
 Overview
   Para, together with Terraform, is a reference to the concept of paraterraforming.
@@ -76,7 +77,8 @@ var optionUnmount string
 
 var rootCmd = &cobra.Command{
 
-	Long: `Para - the missing 3rd-party plugin manager for Terraform
+	Long: `
+Para - the missing 3rd-party plugin manager for Terraform
 
 Concepts
   Primary Index
@@ -108,7 +110,7 @@ Concepts
     Can be used to add or override entries in the primary index. May come handy when one is happy with the remote index
     but needs some extra plugins or if one needs to use an alternative implementation for a give plugin.
 
-    Both file names and file context is used when processing index extensions. Only files matching the pattern 
+    Both file names and file content are used when processing index extensions. Only files matching the pattern 
     '<kind>.<name>.yaml' are loaded and they should be valid single-document YAMLs with the following structure:
 
 	     <vX.Y.Z>:
@@ -116,6 +118,10 @@ Concepts
 		     url: <file://...|http://...|https://...>
 		     size: <size of the provider binary in bytes>
 		     digest: <md5|sha1|sha256|sha512>:<hash of the provider binary>
+
+    Alternatively it can be a single line with a URL like <file://...|http://...|https://...> pointing to a file with
+    the content as described above. An empty file would wipe out all known version for the given plugin from the primary
+    index.
 
     By default Para loads all extensions from all pre-defined locations but if an explicit location is specified then
     it's the only one used.
