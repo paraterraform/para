@@ -2,3 +2,4 @@
 terraform.tfstate
 para
 *.tf
+release
