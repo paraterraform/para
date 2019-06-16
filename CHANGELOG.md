@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Added
+
+- Enabled FUSE async read 
+
 ## 0.2.1 - 2019-06-13
 
 ### Fixed

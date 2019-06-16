@@ -235,6 +235,7 @@ func mountPluginsDir(index *index.RuntimeIndex, mountpoint string) (<-chan struc
 		fuse.Subtype("para"),
 		fuse.LocalVolume(),
 		fuse.ReadOnly(),
+		fuse.AsyncRead(),
 	)
 
 	if err != nil {
