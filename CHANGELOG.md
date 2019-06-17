@@ -4,6 +4,7 @@
 
 ### Added
 
+- Automatically download Terraform when it's not present
 - Enabled FUSE async read 
 
 ## 0.2.1 - 2019-06-13

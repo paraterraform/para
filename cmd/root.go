@@ -21,6 +21,8 @@ const (
 	flagExtensions = "extensions"
 	flagCache      = "cache"
 	flagRefresh    = "refresh"
+
+	flagTerraform = "terraform"
 )
 
 const usageTemplate = `Flags:
@@ -96,7 +98,7 @@ Concepts
     All strings (key & values, except for URLs) must be lowercase. All fields are required (url, size, digest).
 
     URLs may point to archives and they will be automatically extracted (size and digest should be derived from the
-    actual binaries rather than archives) if supported (determined by the extension at the end of the URL):
+    actual binaries rather than archives) if supported (determined by the extension at the end of the Url):
       * .zip
       * .tar
       * .tar.gz  or .tgz
@@ -119,7 +121,7 @@ Concepts
 		     size: <size of the provider binary in bytes>
 		     digest: <md5|sha1|sha256|sha512>:<hash of the provider binary>
 
-    Alternatively it can be a single line with a URL like <file://...|http://...|https://...> pointing to a file with
+    Alternatively it can be a single line with a Url like <file://...|http://...|https://...> pointing to a file with
     the content as described above. An empty file would wipe out all known version for the given plugin from the primary
     index.
 
@@ -171,7 +173,9 @@ Concepts
 
 		optionCachePath := viper.GetString(flagCache)
 		optionRefresh := viper.GetDuration(flagRefresh)
-		app.Execute(args, indexCandidates, extensionsCandidates, optionCachePath, optionRefresh)
+
+		optionTerraform := viper.GetString(flagTerraform)
+		app.Execute(args, indexCandidates, extensionsCandidates, optionCachePath, optionRefresh, optionTerraform)
 	},
 }
 
@@ -229,6 +233,16 @@ func init() {
 		time.Hour,
 		"attempt to refresh remote indices every given interval",
 	)
+
+	// Downloadables
+	rootCmd.Flags().StringP(
+		flagTerraform,
+		"t",
+		"",
+		"Terraform version to download (default - latest)",
+	)
+
+	// Flags that change behavior
 	rootCmd.Flags().StringVarP(
 		&optionUnmount,
 		flagUnmount,
@@ -241,6 +255,7 @@ func init() {
 	_ = viper.BindPFlag(flagExtensions, rootCmd.Flags().Lookup(flagExtensions))
 	_ = viper.BindPFlag(flagCache, rootCmd.Flags().Lookup(flagCache))
 	_ = viper.BindPFlag(flagRefresh, rootCmd.Flags().Lookup(flagRefresh))
+	_ = viper.BindPFlag(flagTerraform, rootCmd.Flags().Lookup(flagTerraform))
 }
 
 func initConfig() {

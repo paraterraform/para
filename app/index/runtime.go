@@ -72,7 +72,7 @@ func (i *RuntimeIndex) OpenPlugin(plugin *Plugin) error {
 	}
 
 	if !cached {
-		err := downloadPlugin(plugin.Url, path)
+		err := utils.DownloadableFile{Url: plugin.Url, ExtractPattern: "terraform-*"}.SaveTo(path)
 		if err != nil {
 			fmt.Printf("   * Error reading '%s': %s\n", plugin.Url, err)
 			return err
@@ -115,31 +115,6 @@ func (i *RuntimeIndex) ClosePlugin(plugin *Plugin) error {
 	return nil
 }
 
-func downloadPlugin(url string, saveTo string) error {
-	// Get the data
-	pluginData, err := utils.UrlOpen(url)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = pluginData.Close() }()
-
-	// Create the file
-	err = os.MkdirAll(filepath.Dir(saveTo), 0755)
-	if err != nil {
-		return err
-	}
-	out, err := os.OpenFile(saveTo, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = out.Close() }()
-	defer func() { _ = os.Chmod(saveTo, 0666) }()
-
-	// Write the body to file
-	_, err = io.Copy(out, pluginData)
-	return err
-}
-
 func verifyPlugin(path string, size uint64, digest string) error {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -150,9 +125,5 @@ func verifyPlugin(path string, size uint64, digest string) error {
 		return fmt.Errorf("actual size of %d does not match expected value of %d", info.Size(), size)
 	}
 
-	if len(digest) > 0 {
-		return utils.DigestVerify(path, digest)
-	}
-
-	return nil
+	return utils.DigestVerify(path, digest)
 }

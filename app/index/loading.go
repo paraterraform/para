@@ -30,12 +30,14 @@ func DiscoverIndex(candidates []string, cacheDir string, refresh time.Duration) 
 	var location string
 	var err error
 
+	indexCacheDir := filepath.Join(cacheDir, "index")
+
 	for _, location = range candidates {
 		if len(location) == 0 {
 			continue
 		}
 
-		content, timestamp, err = openIndex(location, cacheDir, refresh)
+		content, timestamp, err = utils.DownloadableFile{Url: location}.ReadAllWithCache(indexCacheDir, refresh)
 		if err != nil {
 			continue
 		}
@@ -58,42 +60,6 @@ func DiscoverIndex(candidates []string, cacheDir string, refresh time.Duration) 
 	}
 
 	return index, index.loadPrimaryIndex(content)
-}
-
-func openIndex(location string, cacheDir string, refresh time.Duration) ([]byte, time.Time, error) {
-	if utils.UrlIsRemote(location) {
-		indexCacheDir := filepath.Join(cacheDir, "index")
-		indexCachePath := filepath.Join(indexCacheDir, utils.HashString(location))
-
-		cacheData, errCacheData := ioutil.ReadFile(indexCachePath)
-		cacheMeta, errCacheMeta := os.Stat(indexCachePath)
-		var cacheTimestamp time.Time
-		if errCacheMeta != nil {
-			cacheTimestamp = time.Unix(0, 0)
-		} else {
-			cacheTimestamp = cacheMeta.ModTime()
-		}
-
-		if cacheTimestamp.Before(time.Now().Add(-refresh)) || errCacheData != nil {
-			freshData, errFreshData := utils.UrlReadAll(location)
-			if errFreshData != nil {
-				if errCacheData != nil {
-					return nil, time.Now(), errFreshData // we're not sure our cache is valid and failed to fetch so just fail
-				}
-				// failed to fetch but there is _some_ kind of a cache - just return it
-				return cacheData, cacheTimestamp, nil
-			}
-			// we fetched fresh data - let's try to cache it but don't sweat if fail
-			_ = os.MkdirAll(indexCacheDir, 0755)
-			_ = ioutil.WriteFile(indexCachePath, freshData, 0644)
-			return freshData, time.Now(), nil
-		} else {
-			return cacheData, cacheTimestamp, nil
-		}
-	} else {
-		data, err := utils.UrlReadAll(location)
-		return data, time.Now(), err
-	}
 }
 
 func (i *LoadingIndex) loadPrimaryIndex(raw []byte) error {
@@ -161,13 +127,15 @@ func (i *LoadingIndex) LoadExtension(path string) error {
 func (i *LoadingIndex) parseVersions(kind, name string, versions interface{}) (result []*Plugin) {
 	var versionMap map[string]interface{}
 
+	extensionsCacheDir := filepath.Join(i.CacheDir, "index")
+
 	versionMap, versionSpecIsOk := versions.(map[string]interface{})
 	if !versionSpecIsOk {
 		versionIndexUrl, versionIndexUrlOk := versions.(string)
 		if !versionIndexUrlOk {
 			return
 		}
-		versionSpecBytes, _, err := openIndex(versionIndexUrl, i.CacheDir, i.Refresh)
+		versionSpecBytes, _, err := utils.DownloadableFile{Url: versionIndexUrl}.ReadAllWithCache(extensionsCacheDir, i.Refresh)
 		if err != nil {
 			return
 		}

@@ -3,6 +3,7 @@ module github.com/paraterraform/para
 require (
 	bazil.org/fuse v0.0.0-20180421153158-65cc252bf669
 	github.com/dsnet/compress v0.0.1 // indirect
+	github.com/gobwas/glob v0.2.3
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/mitchellh/go-homedir v1.1.0

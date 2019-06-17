@@ -11,6 +11,15 @@ github.com/dsnet/compress/internal/prefix
 github.com/dsnet/compress
 # github.com/fsnotify/fsnotify v1.4.7
 github.com/fsnotify/fsnotify
+# github.com/gobwas/glob v0.2.3
+github.com/gobwas/glob
+github.com/gobwas/glob/compiler
+github.com/gobwas/glob/syntax
+github.com/gobwas/glob/match
+github.com/gobwas/glob/syntax/ast
+github.com/gobwas/glob/util/runes
+github.com/gobwas/glob/syntax/lexer
+github.com/gobwas/glob/util/strings
 # github.com/golang/snappy v0.0.1
 github.com/golang/snappy
 # github.com/hashicorp/hcl v1.0.0

@@ -23,16 +23,54 @@ const (
 	pathPluginDirUser  = "~/.terraform.d/plugins"
 )
 
+const (
+	execTerraform = "terraform"
+)
+
 var pluginDirCandidates = []string{
 	pathPluginDirLocal,
 	pathPluginDirUser,
 }
 
-func Execute(args []string, primaryIndexCandidates, indexExtensions []string, customCachePath string, refresh time.Duration) {
+func Execute(
+	args []string,
+	primaryIndexCandidates, indexExtensions []string,
+	customCachePath string, refresh time.Duration,
+	versionTerraform string,
+) {
 	var pluginDir string
 	var mountpoint *string
 	var stat os.FileInfo
 	var err error
+
+	// Cache Dir
+	fmt.Printf("- Cache Dir: ")
+	cacheDir, err := discoverCacheDir(customCachePath)
+	if err != nil {
+		fmt.Printf(
+			"\n* Error: Para requires a writable cache dir for operation but failed discovering one: %s\n",
+			err,
+		)
+		os.Exit(1)
+	}
+	fmt.Println(utils.PathSimplify(cacheDir))
+
+	var cmd string
+	if args[0] == execTerraform {
+		_, err := exec.LookPath(execTerraform)
+		if err != nil {
+			fmt.Printf("- Terraform: ")
+			// No terraform - need to download it
+			cmd, err = downloadTerraform(versionTerraform, cacheDir, refresh)
+			if err != nil {
+				fmt.Printf("\n* Error: Para was unable to download Terraform:  %s\n", err)
+				os.Exit(1)
+			}
+			fmt.Println(utils.PathSimplify(cmd))
+		}
+	} else {
+		cmd = args[0]
+	}
 
 	// Plugin Dir
 	fmt.Printf("- Plugin Dir: ")
@@ -87,18 +125,6 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 		os.Exit(1)
 	}
 
-	// Cache Dir
-	fmt.Printf("- Cache Dir: ")
-	cacheDir, err := discoverCacheDir(customCachePath)
-	if err != nil {
-		fmt.Printf(
-			"\n* Error: Para requires a writable cache dir for operation but failed discovering one: %s\n",
-			err,
-		)
-		os.Exit(1)
-	}
-	fmt.Println(utils.PathSimplify(cacheDir))
-
 	// Primary Index
 	fmt.Printf("- Primary Index: ")
 	loadingIndex, err := index.DiscoverIndex(primaryIndexCandidates, cacheDir, refresh)
@@ -141,14 +167,14 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 	fmt.Println()
 
 	// Init sub-process
-	cmd := exec.Command(args[0], args[1:]...)
+	subprocess := exec.Command(cmd, args[1:]...)
 
 	// Setup signal handlers and cleanup
 	var signalChan = make(chan os.Signal, 100)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		for sig := range signalChan {
-			if err := cmd.Process.Signal(sig); err != nil {
+			if err := subprocess.Process.Signal(sig); err != nil {
 				fmt.Printf("* Para is unable to forward signal: %s", err) // TODO trace instead of log
 			}
 		}
@@ -162,11 +188,11 @@ func Execute(args []string, primaryIndexCandidates, indexExtensions []string, cu
 	<-ready
 
 	// spawn sub-process
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	subprocess.Stdin = os.Stdin
+	subprocess.Stdout = os.Stdout
+	subprocess.Stderr = os.Stderr
 
-	err = cmd.Run()
+	err = subprocess.Run()
 	_ = fuse.Unmount(*mountpoint)
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
