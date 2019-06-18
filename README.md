@@ -31,12 +31,12 @@ Please see [examples](./examples) for complete setups showcasing Para's usage.
 
 Just download the binary for your platform from the [latest release page](https://github.com/github.com/paraterraform/para/releases/latest) with `wget`:
 ```bash
-wget -O para "https://github.com/paraterraform/para/releases/download/v0.2.1/para_v0.2.1_$(uname -s | tr '[:upper:]' '[:lower:]')-amd64"
+wget -O para "https://github.com/paraterraform/para/releases/download/v0.3.0/para_v0.3.0_$(uname -s | tr '[:upper:]' '[:lower:]')-amd64"
 chmod +x para
 ```
 or `curl`:
 ```bash
-curl -Lo para "https://github.com/paraterraform/para/releases/download/v0.2.1/para_v0.2.1_$(uname -s | tr '[:upper:]' '[:lower:]')-amd64"
+curl -Lo para "https://github.com/paraterraform/para/releases/download/v0.3.0/para_v0.3.0_$(uname -s | tr '[:upper:]' '[:lower:]')-amd64"
 chmod +x para
 ```
 
