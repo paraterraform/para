@@ -26,30 +26,11 @@ $ go mod vendor
 $ go mod tidy
 ```
 
-### Test
-
-```bash
-$ make test
-  GOPROXY="off" GOFLAGS="-mod=vendor" go test -v ./...
-  ?   	github.com/ashald/terraform-provider-yaml	[no test files]
-  === RUN   TestListOfStringsDataSource
-  --- PASS: TestListOfStringsDataSource (0.03s)
-  === RUN   TestMapOfStringsDataSource
-  --- PASS: TestMapOfStringsDataSource (0.06s)
-  === RUN   TestYamlToJsonDataSource
-  --- PASS: TestYamlToJsonDataSource (0.02s)
-  === RUN   TestProvider
-  --- PASS: TestProvider (0.00s)
-  PASS
-  ok  	github.com/ashald/terraform-provider-yaml/yaml	(cached)
-  GOPROXY="off" GOFLAGS="-mod=vendor" go vet ./...
-```
-
 ## Build
 In order to build plugin for the current platform use [GNU]make:
 ```bash
 $ make build
-  GOPROXY="off" GOFLAGS="-mod=vendor" go build -o terraform-provider-yaml_v2.1.0
+GOPROXY="off" GOFLAGS="-mod=vendor" go build -o para
 
 ```
 
@@ -63,10 +44,11 @@ executed against a configuration in the same directory.
 In order to prepare provider binaries for all platforms:
 ```bash
 $ make release
-  GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=darwin GOARCH=amd64 go build -o './release/terraform-provider-yaml_v2.1.0-darwin-amd64'
-  GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=linux GOARCH=amd64 go build -o './release/terraform-provider-yaml_v2.1.0-linux-amd64'
-  GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=windows GOARCH=amd64 go build -o './release/terraform-provider-yaml_v2.1.0-windows-amd64'
+GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o './release/para_v0.3.0_darwin-amd64'
+GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o './release/para_v0.3.0_linux-amd64'
 ```
+
+If you have [upx](https://upx.github.io) available you can compress release binaries with `make compress`.
 
 ## Versioning
 

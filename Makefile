@@ -30,6 +30,9 @@ run:
 release: $(PLATFORMS)
 
 $(PLATFORMS):
-	GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=$(os) GOARCH=$(arch) go build -o '$(RELEASE_DIR)/$(BASE)_$(os)-$(arch)'
+	GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=$(os) GOARCH=$(arch) go build -ldflags="-s -w" -o '$(RELEASE_DIR)/$(BASE)_$(os)-$(arch)'
+
+compress:
+	upx $(RELEASE_DIR)/*
 
 .PHONY: $(PLATFORMS) release build test fmt clean all
