@@ -8,6 +8,10 @@
 - Automatically download Terragrunt when it's not present
 - Enabled FUSE async read 
 
+### Fixed
+
+- FUSE: Plugin dir root no longer returns valid info for anything except valid platform dirs
+
 ## 0.2.1 - 2019-06-13
 
 ### Fixed

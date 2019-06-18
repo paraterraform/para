@@ -50,7 +50,12 @@ func (d Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		if name == FileMeta {
 			return MetaFile{content: fmt.Sprintf("%d\n", os.Getpid())}, nil
 		}
-		return Dir{path: name, fs: d.fs}, nil
+		for _, platform := range d.fs.index.ListPlatforms() {
+			if name == platform {
+				return Dir{path: name, fs: d.fs}, nil
+			}
+		}
+		return nil, fuse.ENOENT
 	} else {
 		plugin := d.fs.index.LookupPlugin(d.path, name)
 		if plugin != nil {
