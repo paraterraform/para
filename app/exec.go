@@ -23,10 +23,6 @@ const (
 	pathPluginDirUser  = "~/.terraform.d/plugins"
 )
 
-const (
-	execTerraform = "terraform"
-)
-
 var pluginDirCandidates = []string{
 	pathPluginDirLocal,
 	pathPluginDirUser,
@@ -55,21 +51,48 @@ func Execute(
 	}
 	fmt.Println(utils.PathSimplify(cacheDir))
 
-	var cmd string
-	if args[0] == execTerraform {
-		_, err := exec.LookPath(execTerraform)
+	cmd := args[0]
+	if cmd == terraformExec || cmd == terragruntExec {
+		fmt.Printf("- Terraform: ")
+		terraformExisting, err := exec.LookPath(terraformExec)
 		if err != nil {
-			fmt.Printf("- Terraform: ")
 			// No terraform - need to download it
-			cmd, err = downloadTerraform(versionTerraform, cacheDir, refresh)
+			fmt.Print("downloading")
+			terraformDir, err := downloadTerraform(versionTerraform, cacheDir, refresh)
 			if err != nil {
-				fmt.Printf("\n* Error: Para was unable to download Terraform:  %s\n", err)
+				fmt.Printf("\n* Error: Para was unable to download Terraform: %s\n", err)
 				os.Exit(1)
 			}
-			fmt.Println(utils.PathSimplify(cmd))
+			err = appendToPath(terraformDir)
+			if err != nil {
+				fmt.Printf("\n* Error: Para was unable to add Terraform to $PATH: %s\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf(" to %s\n", utils.PathSimplify(terraformDir))
+		} else {
+			fmt.Printf("found at %s\n", utils.PathSimplify(terraformExisting))
 		}
-	} else {
-		cmd = args[0]
+	}
+	if cmd == terragruntExec {
+		terragruntExisting, err := exec.LookPath(terragruntExec)
+		fmt.Printf("- Terrragrunt: ")
+		if err != nil {
+			// No terragrunt - need to download it
+			fmt.Print("downloading")
+			terragruntDir, err := downloadTerragrunt(versionTerraform, cacheDir, refresh)
+			if err != nil {
+				fmt.Printf("\n* Error: Para was unable to download Terragrunt: %s\n", err)
+				os.Exit(1)
+			}
+			err = appendToPath(terragruntDir)
+			if err != nil {
+				fmt.Printf("\n* Error: Para was unable to add Terragrunt to $PATH: %s\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf(" to %s\n", utils.PathSimplify(terragruntDir))
+		} else {
+			fmt.Printf("found at %s\n", utils.PathSimplify(terragruntExisting))
+		}
 	}
 
 	// Plugin Dir
@@ -292,4 +315,11 @@ func fuseRun(index *index.RuntimeIndex, c *fuse.Conn) {
 		fmt.Printf("* [ASYNC] Para encountered an error: %s", err)
 		os.Exit(1)
 	}
+}
+
+func appendToPath(new string) error {
+	name := "PATH"
+	current, _ := os.LookupEnv(name)
+	value := strings.Join(append(strings.Split(current, ":"), new), ":")
+	return os.Setenv(name, value)
 }

@@ -6,16 +6,18 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strings"
 	"time"
 )
 
-const terraformReleases = "https://releases.hashicorp.com/terraform/"
+const (
+	terraformExec     = "terraform"
+	terraformReleases = "https://releases.hashicorp.com/terraform/"
+)
 
 var terraformVersionRe = *regexp.MustCompile(`href="/terraform/([\d\\.]+?)/"`)
 
 func downloadTerraform(version, cacheDir string, refresh time.Duration) (string, error) {
-	terraformCacheDir := filepath.Join(cacheDir, execTerraform)
+	terraformCacheDir := filepath.Join(cacheDir, terraformExec)
 
 	var versionToDownload string
 
@@ -35,53 +37,37 @@ func downloadTerraform(version, cacheDir string, refresh time.Duration) (string,
 		versionToDownload = knownVersions[0] // keep it sample for now, assume list is sorted
 	}
 
-	pathToTerraform := filepath.Join(
+	pathToVersionDir := filepath.Join(
 		terraformCacheDir,
 		versionToDownload,
 		fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH),
-		execTerraform,
 	)
-	if utils.PathExists(pathToTerraform) {
+	pathToExecutable := filepath.Join(pathToVersionDir, terraformExec)
+	if utils.PathExists(pathToExecutable) {
 		// already downloaded & cached
 		// given that checksums published for archives we will check them when fetching binaries and before unpacking
-		return pathToTerraform, nil
+		return pathToVersionDir, nil
 	}
 
-	urlVersion := utils.UrlJoin(terraformReleases, versionToDownload)
-	urlVersionChecksums := utils.UrlJoin(urlVersion, fmt.Sprintf("terraform_%s_SHA256SUMS", versionToDownload))
+	// windows binary has .exe suffix but there is no FUSE on windows so there is no para on windows ¯\_(ツ)_/¯
+	expectedFileName := terragruntExec + "_" + runtime.GOOS + "_" + runtime.GOARCH
+	urlVersionPrefix := utils.UrlJoin(terraformReleases, versionToDownload)
+	urlVersionChecksums := utils.UrlJoin(urlVersionPrefix, terraformExec+versionToDownload+"_SHA256SUMS")
+	urlVersionBinary := utils.UrlJoin(urlVersionPrefix, expectedFileName)
 
-	checksumsBytes, _, err := utils.DownloadableFile{Url:urlVersionChecksums}.ReadAllWithCache(
-		filepath.Join(terraformCacheDir, "checksums"), time.Hour*24*365*10,
+	sha256 := findChecksumForFile(
+		urlVersionChecksums, expectedFileName,
+		filepath.Join(terraformCacheDir, "checksums"), refresh,
 	)
+
+	err := utils.DownloadableFile{
+		Url:            urlVersionBinary,
+		Digest:         "sha256:" + sha256,
+		ExtractPattern: "terraform*",
+	}.SaveTo(pathToExecutable)
 	if err != nil {
 		return "", err
 	}
 
-	var targetChecksum string
-	var targetFilename string
-
-	for _, line := range strings.Split(string(checksumsBytes), "\n") {
-		fields := strings.Fields(line)
-		if len(fields) != 2 {
-			continue
-		}
-		if strings.HasPrefix(
-			fields[1],
-			fmt.Sprintf("terraform_%s_%s_%s", versionToDownload, runtime.GOOS, runtime.GOARCH),
-		) {
-			targetChecksum = fields[0]
-			targetFilename = fields[1]
-		}
-	}
-	urlToDownload := utils.UrlJoin(urlVersion, targetFilename)
-	err = utils.DownloadableFile{
-		Url:urlToDownload,
-		Digest:"sha256:"+targetChecksum,
-		ExtractPattern:"terraform*",
-	}.SaveTo(pathToTerraform)
-	if err != nil {
-		return "", err
-	}
-
-	return pathToTerraform, nil
+	return pathToVersionDir, nil
 }
