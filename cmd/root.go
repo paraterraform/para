@@ -30,7 +30,8 @@ const usageTemplate = `Flags:
 `
 
 const helpShort = `
-Para - the missing 3rd-party plugin manager for Terraform.
+Para - the missing community plugin manager for Terraform.
+A "swiss army knife" for Terraform and Terragrunt - just 1 tool that would facilitate all your workflows.
 
 Overview
   Para, together with Terraform, is a reference to the concept of paraterraforming.
@@ -80,7 +81,8 @@ var optionUnmount string
 var rootCmd = &cobra.Command{
 
 	Long: `
-Para - the missing 3rd-party plugin manager for Terraform
+Para - the missing community plugin manager for Terraform.
+A "swiss army knife" for Terraform and Terragrunt - just 1 tool that would facilitate all your workflows.
 
 Concepts
   Primary Index

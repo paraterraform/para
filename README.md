@@ -1,6 +1,7 @@
 # Para
 
-> The missing 3-rd party plugin manager for [Terraform].
+> The missing community plugin manager for [Terraform].
+> A "swiss army knife" for [Terraform] and [Terragrunt] - just 1 tool that would facilitate all your workflows.
  
 ## Overview
 
@@ -9,11 +10,20 @@ Para, together with Terraform, is a reference to the concept of [paraterraformin
 As paraterraforming is an option until terraforming is possible - Para takes care of distributing 3rd party plugins
 for Terraform until it's implemented in Terraform.
 
-Para uses FUSE to mount a virtual file system over well-known Terraform plugin locations (such as terraform.d/plugins
-and ~/.terraform.d/plugins - see [official docs](https://www.terraform.io/docs/extend/how-terraform-works.html#plugin-locations) for
+Para uses FUSE to mount a virtual file system over well-known Terraform plugin locations (such as `terraform.d/plugins`
+and `~/.terraform.d/plugins` - see [official docs](https://www.terraform.io/docs/extend/how-terraform-works.html#plugin-locations) for
 details) and downloads them on demand (with optional caching) using a [curated index](https://github.com/paraterraform/index) (or your own).
 
 Please note that FUSE must be available (macOS requires OSXFUSE - https://osxfuse.github.io).
+
+## Capabilities
+* Download community plugins for Terraform on demand using a curated default index or your own
+* Download [Terraform] on demand
+* Download [Terragrunt] on demand
+
+## Examples
+
+Please see [examples](./examples) for complete setups showcasing Para's usage.  
 
 ## Usage
 
@@ -270,14 +280,11 @@ all known versions of the `prrovider` plugin named `foo` from the primary index.
 
 ### Roadmap
 
-Para aims to be the "swiss army knife" for [Terraform] (and [Terragrunt]) - just 1 tool that would facilitate all your workflows.
-
 Future is not set in stone but might as well look like:
 * testing ¯\\\_(ツ)_/¯
 * logging/tracing for debugging
 * helper commands to analyze/verify indices
 * helper commands to control cache state  
-* downloading proper versions of [Terraform] and [Terragrunt] on demand
 * serve as an adaptor for arbitrary state management backends (leverage `http` backend to convert API calls into command line calls)
 * you name it!
 

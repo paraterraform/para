@@ -1,5 +1,6 @@
 .terraform
-terraform.tfstate
-para
+*.tfstate
 *.tf
+
+para
 release
