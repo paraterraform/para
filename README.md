@@ -1,7 +1,7 @@
 # Para
 
 > The missing community plugin manager for [Terraform].
-> A "swiss army knife" for [Terraform] and [Terragrunt] - just 1 tool that would facilitate all your workflows.
+> A "swiss army knife" for [Terraform] and [Terragrunt] - just 1 tool to facilitate all your workflows.
  
 ## Overview
 
@@ -18,8 +18,8 @@ Please note that FUSE must be available (macOS requires OSXFUSE - https://osxfus
 
 ## Capabilities
 * Download community plugins for Terraform on demand using a curated default index or your own
-* Download [Terraform] on demand
-* Download [Terragrunt] on demand
+* Download [Terraform] on demand (just run it as though it's there `para terraform ...`)
+* Download [Terragrunt] on demand (just run it as though it's there `para terragrunt ...`)
 
 ## Examples
 
@@ -46,7 +46,7 @@ It's advised to make sure that `para` is onn your `$PATH` for convenience.
 
 Para serves as a process wrapper so just prepend it to every `terraforrm` command.
 
-For instance, let's say we want to work with YAML using the 3-rd party plugin [terraform-provider-yaml](https://github.com/ashald/terraform-provider-yaml):
+For instance, let's say we want to work with YAML using the community plugin [terraform-provider-yaml](https://github.com/ashald/terraform-provider-yaml):
 ```bash
 $ cat > example.tf << HCL2
 data "yaml_list_of_strings" "doc" {
@@ -106,10 +106,12 @@ $ mkdir -p terraform.d/plugins
 And try again:
 ```bash
 $ para terraform init
+para terraform init
 Para is being initialized...
-- Plugin Dir: terraform.d/plugins
 - Cache Dir: $TMPDIR/para-501
-- Primary Index: https://raw.githubusercontent.com/paraterraform/index/master/para.idx.yaml as of 2019-06-13T22:21:29-04:00 (provider: 2)
+- Terraform: downloading to $TMPDIR/para-501/terraform/0.12.2/darwin_amd64
+- Plugin Dir: terraform.d/plugins
+- Primary Index: https://raw.githubusercontent.com/paraterraform/index/master/para.idx.yaml as of 2019-06-17T23:54:22-04:00 (providers: 8)
 - Index Extensions: para.idx.d (0/0), ~/.para/para.idx.d (0/0), /etc/para/para.idx.d (0/0)
 - Command: terraform init
 
@@ -174,9 +176,10 @@ But!
 ```bash
 $ para terraform apply
 Para is being initialized...
-- Plugin Dir: terraform.d/plugins
 - Cache Dir: $TMPDIR/para-501
-- Primary Index: para.idx.yaml as of 2019-06-13T22:24:03-04:00 (provider: 2)
+- Terraform: downloading to $TMPDIR/para-501/terraform/0.12.2/darwin_amd64
+- Plugin Dir: terraform.d/plugins
+- Primary Index: https://raw.githubusercontent.com/paraterraform/index/master/para.idx.yaml as of 2019-06-17T23:54:22-04:00 (providers: 8)
 - Index Extensions: para.idx.d (0/0), ~/.para/para.idx.d (0/0), /etc/para/para.idx.d (0/0)
 - Command: terraform apply
 
@@ -225,13 +228,14 @@ Primary index file should be a YAML in the format of:
      <platform>:
        url: <file://...|http://...|https://...>
        size: <size of the provider binary in bytes>
-       digest: <md5|sha1|sha256|sha512>:<hash of the provider binary>
+       digest: <md5|sha1|sha256|sha512>:<hash of the file that will be download - verified before extraction>
 ```
 
 All strings (key & values, except for URLs) must be lowercase. All fields are required (url, size, digest).
 
-URLs may point to archives and they will be automatically extracted (size and digest should be derived from the
-actual binaries rather than archives) if supported (determined by the extension at the end of the URL):
+URLs may point to archives and they will be automatically extracted (size MUST be always derived from the actual
+plugin binary and digest MUST be derived from the archive in such cases) if supported (determined by the extension
+at the end of the Url):
   * .zip
   * .tar
   * .tar.gz  or .tgz
@@ -266,7 +270,7 @@ Each index extension file should be one of the following:
    <platform>:
      url: <file://...|http://...|https://...>
      size: <size of the provider binary in bytes>
-     digest: <md5|sha1|sha256|sha512>:<hash of the provider binary>
+     digest: <md5|sha1|sha256|sha512>:<hash of the file that will be download - verified before extraction>
 ```
 * a single line with a URL like `file://...|http://...|https://...` pointing to a file with the content as described above.
 

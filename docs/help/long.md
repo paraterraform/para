@@ -4,7 +4,8 @@
 $ para -h
 Para is being initialized...
 
-Para - the missing 3rd-party plugin manager for Terraform
+Para - the missing community plugin manager for Terraform.
+A "swiss army knife" for Terraform and Terragrunt - just 1 tool to facilitate all your workflows.
 
 Concepts
   Primary Index
@@ -17,12 +18,13 @@ Concepts
              <platform>:
                url: <file://...|http://...|https://...>
                size: <size of the provider binary in bytes>
-               digest: <md5|sha1|sha256|sha512>:<hash of the provider binary>
+               digest: <md5|sha1|sha256|sha512>:<hash of the file that will be download - verified before extraction>
 
     All strings (key & values, except for URLs) must be lowercase. All fields are required (url, size, digest).
 
-    URLs may point to archives and they will be automatically extracted (size and digest should be derived from the
-    actual binaries rather than archives) if supported (determined by the extension at the end of the URL):
+    URLs may point to archives and they will be automatically extracted (size MUST be always derived from the actual
+    plugin binary and digest MUST be derived from the archive in such cases) if supported (determined by the extension
+    at the end of the Url):
       * .zip
       * .tar
       * .tar.gz  or .tgz
@@ -43,9 +45,9 @@ Concepts
 		   <platform>:
 		     url: <file://...|http://...|https://...>
 		     size: <size of the provider binary in bytes>
-		     digest: <md5|sha1|sha256|sha512>:<hash of the provider binary>
+		     digest: <md5|sha1|sha256|sha512>:<hash of the file that will be download - verified before extraction>
 
-    Alternatively it can be a single line with a URL like <file://...|http://...|https://...> pointing to a file with
+    Alternatively it can be a single line with a Url like <file://...|http://...|https://...> pointing to a file with
     the content as described above. An empty file would wipe out all known version for the given plugin from the primary
     index.
 
@@ -69,6 +71,7 @@ Flags:
   -x, --extensions string   index extensions directory (default - union from: para.idx.d, ~/.para/para.idx.d, /etc/para/para.idx.d)
   -c, --cache string        cache dir (default - ~/.cache/para if exists or /tmp/para-$UID)
   -r, --refresh duration    attempt to refresh remote indices every given interval (default 1h0m0s)
+  -t, --terraform string    Terraform version to download (default - latest)
   -u, --unmount string      force unmount dir (just unmount the given dir and exit, all other flags and arguments ignored)
   -h, --help                help for this command
 ``` 

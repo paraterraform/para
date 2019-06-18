@@ -4,7 +4,8 @@
 $ para
 Para is being initialized...
 
-Para - the missing 3rd-party plugin manager for Terraform.
+Para - the missing community plugin manager for Terraform.
+A "swiss army knife" for Terraform and Terragrunt - just 1 tool to facilitate all your workflows.
 
 Overview
   Para, together with Terraform, is a reference to the concept of paraterraforming.

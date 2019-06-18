@@ -31,7 +31,7 @@ const usageTemplate = `Flags:
 
 const helpShort = `
 Para - the missing community plugin manager for Terraform.
-A "swiss army knife" for Terraform and Terragrunt - just 1 tool that would facilitate all your workflows.
+A "swiss army knife" for Terraform and Terragrunt - just 1 tool to facilitate all your workflows.
 
 Overview
   Para, together with Terraform, is a reference to the concept of paraterraforming.
@@ -82,7 +82,7 @@ var rootCmd = &cobra.Command{
 
 	Long: `
 Para - the missing community plugin manager for Terraform.
-A "swiss army knife" for Terraform and Terragrunt - just 1 tool that would facilitate all your workflows.
+A "swiss army knife" for Terraform and Terragrunt - just 1 tool to facilitate all your workflows.
 
 Concepts
   Primary Index
@@ -95,12 +95,13 @@ Concepts
              <platform>:
                url: <file://...|http://...|https://...>
                size: <size of the provider binary in bytes>
-               digest: <md5|sha1|sha256|sha512>:<hash of the provider binary>
+               digest: <md5|sha1|sha256|sha512>:<hash of the file that will be download - verified before extraction>
 
     All strings (key & values, except for URLs) must be lowercase. All fields are required (url, size, digest).
 
-    URLs may point to archives and they will be automatically extracted (size and digest should be derived from the
-    actual binaries rather than archives) if supported (determined by the extension at the end of the Url):
+    URLs may point to archives and they will be automatically extracted (size MUST be always derived from the actual
+    plugin binary and digest MUST be derived from the archive in such cases) if supported (determined by the extension
+    at the end of the Url):
       * .zip
       * .tar
       * .tar.gz  or .tgz
@@ -121,7 +122,7 @@ Concepts
 		   <platform>:
 		     url: <file://...|http://...|https://...>
 		     size: <size of the provider binary in bytes>
-		     digest: <md5|sha1|sha256|sha512>:<hash of the provider binary>
+		     digest: <md5|sha1|sha256|sha512>:<hash of the file that will be download - verified before extraction>
 
     Alternatively it can be a single line with a Url like <file://...|http://...|https://...> pointing to a file with
     the content as described above. An empty file would wipe out all known version for the given plugin from the primary
