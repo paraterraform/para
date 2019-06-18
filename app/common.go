@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func findChecksumForFile(url, file, cache string, refresh time.Duration) string {
+func findChecksumForFile(prefix, url, file, cache string, refresh time.Duration) string {
 	checksums, _, err := utils.DownloadableFile{
 		Url: url,
 	}.ReadAllWithCache(filepath.Join(cache, "checksums"), refresh)
@@ -23,7 +23,7 @@ func findChecksumForFile(url, file, cache string, refresh time.Duration) string 
 		lineHash := fields[0]
 		lineName := fields[1]
 		if lineName == file {
-			return lineHash
+			return prefix + lineHash
 		}
 
 	}

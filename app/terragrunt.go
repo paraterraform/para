@@ -61,14 +61,14 @@ func downloadTerragrunt(version, cacheDir string, refresh time.Duration) (string
 	urlVersionChecksums := utils.UrlJoin(urlVersionPrefix, "SHA256SUMS")
 	urlVersionBinary := utils.UrlJoin(urlVersionPrefix, expectedFileName)
 
-	sha256 := findChecksumForFile(
+	sha256 := findChecksumForFile("sha256:",
 		urlVersionChecksums, expectedFileName,
 		filepath.Join(terragruntCacheDir, "checksums"), refresh,
 	)
 
 	err := utils.DownloadableFile{
 		Url:    urlVersionBinary,
-		Digest: "sha256:" + sha256,
+		Digest: sha256,
 	}.SaveTo(pathToExecutable)
 	if err != nil {
 		return "", err

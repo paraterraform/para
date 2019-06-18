@@ -50,19 +50,19 @@ func downloadTerraform(version, cacheDir string, refresh time.Duration) (string,
 	}
 
 	// windows binary has .exe suffix but there is no FUSE on windows so there is no para on windows ¯\_(ツ)_/¯
-	expectedFileName := terragruntExec + "_" + runtime.GOOS + "_" + runtime.GOARCH
+	expectedFileName := terraformExec + "_" + versionToDownload + "_" + runtime.GOOS + "_" + runtime.GOARCH + ".zip"
 	urlVersionPrefix := utils.UrlJoin(terraformReleases, versionToDownload)
-	urlVersionChecksums := utils.UrlJoin(urlVersionPrefix, terraformExec+versionToDownload+"_SHA256SUMS")
+	urlVersionChecksums := utils.UrlJoin(urlVersionPrefix, terraformExec+"_"+versionToDownload+"_SHA256SUMS")
 	urlVersionBinary := utils.UrlJoin(urlVersionPrefix, expectedFileName)
 
-	sha256 := findChecksumForFile(
+	sha256 := findChecksumForFile("sha256:",
 		urlVersionChecksums, expectedFileName,
 		filepath.Join(terraformCacheDir, "checksums"), refresh,
 	)
 
 	err := utils.DownloadableFile{
 		Url:            urlVersionBinary,
-		Digest:         "sha256:" + sha256,
+		Digest:         sha256,
 		ExtractPattern: "terraform*",
 	}.SaveTo(pathToExecutable)
 	if err != nil {
