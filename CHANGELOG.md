@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Para would verify digests of archives before extracting them rather than checking it on the file extracted from it
+
 ### Added
 
 - Automatically download Terraform when it's not present

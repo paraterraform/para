@@ -50,7 +50,7 @@ func (i *RuntimeIndex) OpenPlugin(plugin *Plugin) error {
 	cached := true
 	cachedStateStr := "cached"
 
-	if verifyPlugin(path, plugin.Size, plugin.Digest) != nil {
+	if verifyPluginSize(path, plugin.Size) != nil {
 		cached = false
 		cachedStateStr = "downloading"
 	}
@@ -72,12 +72,12 @@ func (i *RuntimeIndex) OpenPlugin(plugin *Plugin) error {
 	}
 
 	if !cached {
-		err := utils.DownloadableFile{Url: plugin.Url, ExtractPattern: "terraform-*"}.SaveTo(path)
+		err := utils.DownloadableFile{Url: plugin.Url, ExtractPattern: "terraform-*", Digest: plugin.Digest}.SaveTo(path)
 		if err != nil {
 			fmt.Printf("   * Error reading '%s': %s\n", plugin.Url, err)
 			return err
 		}
-		err = verifyPlugin(path, plugin.Size, plugin.Digest)
+		err = verifyPluginSize(path, plugin.Size)
 		if err != nil {
 			_ = os.Remove(path)
 			fmt.Printf("   * Error reading '%s': %s\n", plugin.Url, err)
@@ -115,7 +115,7 @@ func (i *RuntimeIndex) ClosePlugin(plugin *Plugin) error {
 	return nil
 }
 
-func verifyPlugin(path string, size uint64, digest string) error {
+func verifyPluginSize(path string, size uint64) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -125,5 +125,5 @@ func verifyPlugin(path string, size uint64, digest string) error {
 		return fmt.Errorf("actual size of %d does not match expected value of %d", info.Size(), size)
 	}
 
-	return utils.DigestVerify(path, digest)
+	return nil
 }
