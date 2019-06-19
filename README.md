@@ -1,22 +1,22 @@
 # Para
 
-> The missing community plugin manager for [Terraform].
 > A "swiss army knife" for [Terraform] and [Terragrunt] - just 1 tool to facilitate all your workflows.
  
 ## Overview
 
 Para, together with Terraform, is a reference to the concept of [paraterraforming](https://en.wikipedia.org/wiki/Terraforming#Paraterraforming).
 
-As paraterraforming is an option until terraforming is possible - Para takes care of distributing 3rd party plugins
+As paraterraforming is an option until terraforming is possible - Para takes care of distributing community plugins
 for Terraform until it's implemented in Terraform.
 
 Para uses FUSE to mount a virtual file system over well-known Terraform plugin locations (such as `terraform.d/plugins`
 and `~/.terraform.d/plugins` - see [official docs](https://www.terraform.io/docs/extend/how-terraform-works.html#plugin-locations) for
 details) and downloads them on demand (with optional caching) using a [curated index](https://github.com/paraterraform/index) (or your own).
 
-Please note that FUSE must be available (macOS requires OSXFUSE - https://osxfuse.github.io).
+Please note that FUSE must be available (macOS requires [OSXFUSE](https://osxfuse.github.io)).
 
 ## Capabilities
+
 * Download community plugins for Terraform on demand using a curated default index or your own
 * Download [Terraform] on demand (just run it as though it's there `para terraform ...`)
 * Download [Terragrunt] on demand (just run it as though it's there `para terragrunt ...`)
@@ -29,22 +29,47 @@ Please see [examples](./examples) for complete setups showcasing Para's usage.
 
 ### Install
 
-Just download the binary for your platform from the [latest release page](https://github.com/github.com/paraterraform/para/releases/latest) with `wget`:
+#### Automatic
+
+There is an automatic [launcher script](https://github.com/paraterraform/para/blob/master/para) that in about 80 lines of
+Bash would download (and cache!) the right (or the latest) version of `para` whenever you need it (and check for updates).
+It's suggested way of installing `para` - just download the launcher script to your Terraform/Terragrunt config dir
+(dont' forget to check it into your version control system) and make it executable:
 ```bash
-wget -O para "https://github.com/paraterraform/para/releases/download/v0.3.0/para_v0.3.0_$(uname -s | tr '[:upper:]' '[:lower:]')-amd64"
-chmod +x para
+curl --location --output para https://raw.githubusercontent.com/paraterraform/para/master/para
+chmod +x para 
+``` 
+From there on just always invoke Para as `./para`:
+```bash
+$ ./para 
+Para Launcher Activated!
+- Checking para.cfg.yaml in current directory for 'version: X.Y.Z'
+- Desired version: latest (latest is used when no version specified)
+- Downloading Para checksums for version 'latest' to '$TMPDIR/para-501/para/latest'
+- Downloading Para 'darwin' binary for version 'latest' to '$TMPDIR/para-501/para/latest'
+- Starting Para from '$TMPDIR/para-501/para/latest/para_v0.3.0_darwin-amd64'
+
+------------------------------------------------------------------------
+
+Para is being initialized...
+<rest is omitted for brevity>
 ```
-or `curl`:
+
+You can request a specific version of Para by adding a `version` field to `para.cfg.yaml` next to the launcher script.
+
+#### Manual
+
+Just download the binary for your platform from the [latest release page](https://github.com/github.com/paraterraform/para/releases/latest) with `curl`:
 ```bash
-curl -Lo para "https://github.com/paraterraform/para/releases/download/v0.3.0/para_v0.3.0_$(uname -s | tr '[:upper:]' '[:lower:]')-amd64"
+curl -Lo para "https://github.com/paraterraform/para/releases/latest/download/$(curl -L https://github.com/paraterraform/para/releases/latest/download/SHA256SUMS | grep -i $(uname -s) | awk '{ print $2 }')"
 chmod +x para
 ```
 
-It's advised to make sure that `para` is onn your `$PATH` for convenience.
+It's advised to make sure that `para` is on your `$PATH` for convenience.
 
 ### Run
 
-Para serves as a process wrapper so just prepend it to every `terraforrm` command.
+Para serves as a process wrapper so just prepend it to every `terraforrm` (or `terragrunt`) command.
 
 For instance, let's say we want to work with YAML using the community plugin [terraform-provider-yaml](https://github.com/ashald/terraform-provider-yaml):
 ```bash
@@ -91,7 +116,7 @@ To view the provider versions requested by each module, run
 
 Now, let's try `para`!
 ```bash
-$ para terraform init
+$ ./para terraform init
 Para is being initialized...
 - Plugin Dir:
 * Para is humble but it won't let itself be ignored! Please make sure that at least one of the following dirs exists: terraform.d/plugins, ~/.terraform.d/plugins.
@@ -105,7 +130,7 @@ $ mkdir -p terraform.d/plugins
 
 And try again:
 ```bash
-$ para terraform init
+$ ./para terraform init
 para terraform init
 Para is being initialized...
 - Cache Dir: $TMPDIR/para-501
@@ -174,7 +199,7 @@ Error: provider.yaml: no suitable version installed
 But!
 
 ```bash
-$ para terraform apply
+$ ./para terraform apply
 Para is being initialized...
 - Cache Dir: $TMPDIR/para-501
 - Terraform: downloading to $TMPDIR/para-501/terraform/0.12.2/darwin_amd64

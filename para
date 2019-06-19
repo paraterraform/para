@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+#set -o xtrace
+
+path () { echo "${1}" | sed "s+${TMPDIR:-\$TMPDIR}+\$TMPDIR+" | sed "s+${HOME}+\$HOME+"; }
+
+echo "Para Launcher Activated!"
+echo "- Checking para.cfg.yaml in current directory for 'version: X.Y.Z'"
+
+cfg="$(cat para.cfg.yaml 2>/dev/null | grep 'version:' | head -1 | cut -d' ' -f-2 | sed 's/ersion: //')"
+version="${cfg:-latest}"
+
+case "${version}" in
+ latest) suffix="${version}/download" ;;
+ *) suffix="download/${version}" ;;
+esac
+downloads="https://github.com/paraterraform/para/releases/${suffix}"
+
+echo "- Desired version: ${version} (latest is used when no version specified)"
+
+tmp=$(echo "${TMPDIR:-/tmp}")
+cache="${tmp}/para-${UID}/para/${version}"
+sha256sums="${cache}/SHA256SUMS"
+platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
+
+if [[ ! -f "${sha256sums}" ]] || ( [[ "${version}" == "latest" ]] && ! find "${sha256sums}" -mtime +1d -exec false '{}' + ) ; then
+  echo "- Downloading checksums for version '${version}' to '$(path ${cache})'"
+  mkdir -p "${cache}"
+  checksumsUrl="${downloads}/SHA256SUMS"
+  checksumsOutput=$(curl --fail --location --output "${sha256sums}" "${checksumsUrl}" 2>&1)
+  checksumsResult=${?}
+  if [[ ${checksumsResult} != 0 ]] && [[ ! -f "${sha256sums}" ]]; then
+    echo "* Failed to fetch checksums for version '${version}' from ${checksumsUrl} with exit code '${checksumsResult}'"
+    echo "  If the error below doesn't look like a transient one - please submit an issue at https://github.com/paraterraform/para/issues/new"
+    echo
+    echo "${checksumsOutput}"
+    echo
+    exit 1
+  fi
+fi
+
+digest=$(grep "${platform}" "${sha256sums}")
+if [[ $? -ne 0 ]]; then
+  echo "* Para version '${version}' does not seem to have a build for your platform '${platform}'"
+  echo "  Please submit an issue with the message above at https://github.com/paraterraform/para/issues/new"
+  exit 1
+fi
+
+checksum=$(echo "${digest}" | awk '{ print $1 }')
+filename=$(echo "${digest}" | awk '{ print $2 }')
+
+para="${cache}/${filename}"
+
+if [[ ! -f "${para}" ]]; then
+  echo "- Downloading '${platform}' binary for version '${version}' to '$(path ${cache})'"
+  binaryUrl="${downloads}/${filename}"
+  binaryOutput=$(curl --fail --location --output "${para}" "${binaryUrl}" 2>&1)
+  binaryResult=${?}
+  if [[ ${binaryResult} != 0 ]]; then
+    echo "* Failed to fetch binary for version '${version}' from ${binaryUrl} with exit code '${binaryResult}'"
+    echo "  If the error below doesn't look like a transient one - please submit an issue at https://github.com/paraterraform/para/issues/new"
+    echo
+    echo "${binaryOutput}"
+    echo
+    exit 1
+  fi
+  chmod +x "${para}"
+fi
+
+if ! echo "${checksum}  ${para}" | shasum -a 256 -c - &>/dev/null; then
+    echo "* Checksum for '$(path ${para})' didn't match expected value of '${digest}'"
+    echo "  Please execute 'rm -rf $(path ${cache})' and run '${0}' again."
+    echo "  If the above doesn't look right or the issue persists - please submit an issue at https://github.com/paraterraform/para/issues/new"
+    exit 1
+fi
+
+echo "- Executing '$(path ${para})'"
+echo
+echo "------------------------------------------------------------------------"
+echo
+exec "${para}" "$@"

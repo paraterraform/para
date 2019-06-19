@@ -11,28 +11,38 @@ RELEASE_DIR := ./release
 
 all: clean test release
 
+.PHONY: clean
 clean:
-	rm -rf $(RELEASE_DIR) ./$(NAME)
+	rm -rf $(RELEASE_DIR)
 
+.PHONY: format
 format:
 	GOPROXY="off" GOFLAGS="-mod=vendor" go fmt ./...
 
+.PHONY: test
 test:
 	GOPROXY="off" GOFLAGS="-mod=vendor" go test -v ./...
 	GOPROXY="off" GOFLAGS="-mod=vendor" go vet ./...
 
+.PHONY: build
 build:
 	GOPROXY="off" GOFLAGS="-mod=vendor" go build -o $(NAME)
 
+.PHONY: run
 run:
 	GOPROXY="off" GOFLAGS="-mod=vendor" go run . $(args)
 
+.PHONY: release
 release: $(PLATFORMS)
 
+.PHONY: $(PLATFORMS)
 $(PLATFORMS):
 	GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=$(os) GOARCH=$(arch) go build -ldflags="-s -w" -o '$(RELEASE_DIR)/$(BASE)_$(os)-$(arch)'
 
+.PHONY: compress
 compress:
 	upx $(RELEASE_DIR)/*
 
-.PHONY: $(PLATFORMS) release build test fmt clean all
+.PHONY: sums
+sums:
+	cd $(RELEASE_DIR); shasum -a 256 para* > SHA256SUMS
