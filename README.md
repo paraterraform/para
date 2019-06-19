@@ -1,9 +1,10 @@
 # Para
 
-> A "swiss army knife" for [Terraform] and [Terragrunt] - just 1 tool to facilitate all your workflows.
+> A "swiss army knife" for [Terraform] and [Terragrunt] - just 1 tool to facilitate all your workflows
  
 ## Overview
 
+<a href="https://en.wiktionary.org/wiki/paraterraform#English" target="_blank"><img align="right" src="docs/para.png"></a>
 Para, together with Terraform, is a reference to the concept of [paraterraforming](https://en.wikipedia.org/wiki/Terraforming#Paraterraforming).
 
 As paraterraforming is an option until terraforming is possible - Para takes care of distributing community plugins
