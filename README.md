@@ -19,7 +19,7 @@ Please note that FUSE must be available (macOS requires [OSXFUSE](https://osxfus
 
 ## Capabilities
 
-* Download community plugins for Terraform on demand using a curated default index or your own
+* Download [community plugins](https://www.terraform.io/docs/providers/type/community-index.html) for [Terraform] on demand using a [curated default index](https://github.com/paraterraform/index) or your own
 * Download [Terraform] on demand (just run it as though it's there `para terraform ...`)
 * Download [Terragrunt] on demand (just run it as though it's there `para terragrunt ...`)
 
