@@ -26,7 +26,7 @@ test:
 
 .PHONY: build
 build:
-	GOPROXY="off" GOFLAGS="-mod=vendor" go build -o $(NAME)
+	GOPROXY="off" GOFLAGS="-mod=vendor" go build -o $(NAME)-dev
 
 .PHONY: run
 run:
