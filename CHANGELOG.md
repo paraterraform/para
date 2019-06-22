@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Fixed
+
+- Failure when extracting plugin archives with directories inside 
+
 ## 0.3.0 - 2019-06-18
 
 ### Changed

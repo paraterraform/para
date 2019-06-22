@@ -111,6 +111,9 @@ func (d DownloadableFile) Open() (io.ReadCloser, error) {
 	}
 
 	err = archiver.Walk(rawData.Name(), func(f archiver.File) error {
+		if f.IsDir() {
+			return nil
+		}
 		if glob.MustCompile(d.ExtractPattern).Match(f.Name()) {
 			_, err = io.Copy(uncompressedData, f.ReadCloser)
 			if err != nil {
