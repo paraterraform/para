@@ -49,7 +49,7 @@ Para Launcher Activated!
 - Desired version: latest (latest is used when no version specified)
 - Downloading Para checksums for version 'latest' to '$TMPDIR/para-501/para/latest'
 - Downloading Para 'darwin' binary for version 'latest' to '$TMPDIR/para-501/para/latest'
-- Starting Para from '$TMPDIR/para-501/para/latest/para_v0.3.0_darwin-amd64'
+- Starting Para from '$TMPDIR/para-501/para/latest/para_v0.3.1_darwin-amd64'
 
 ------------------------------------------------------------------------
 
