@@ -4,7 +4,7 @@
 $ para
 Para is being initialized...
 
-Para - the missing community plugin manager for Terraform.
+Para - community plugin manager for Terraform.
 A "swiss army knife" for Terraform and Terragrunt - just 1 tool to facilitate all your workflows.
 
 Overview
