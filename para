@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 
-#set -o xtrace
+echo "Para Launcher Activated!"
 
 path () { echo "${1}" | sed "s+${TMPDIR:-\$TMPDIR}+\$TMPDIR+" | sed "s+${HOME}+\$HOME+"; }
 
-echo "Para Launcher Activated!"
 echo "- Checking para.cfg.yaml in current directory for 'version: X.Y.Z'"
-
 cfg="$(cat para.cfg.yaml 2>/dev/null | grep 'version:' | head -1 | cut -d' ' -f-2 | sed 's/ersion: //')"
 version="${cfg:-latest}"
 
