@@ -72,7 +72,7 @@ It's advised to make sure that `para` is on your `$PATH` for convenience.
 Para serves as a process wrapper so just prepend it to every `terraforrm` (or `terragrunt`) command.
 
 <div align="center">
-  <img src="./docs/demo.svg">
+  <img src="docs/demo.svg">
 </div>
 
 The step-by-step instruction for the demo are available [here](./docs/demo.md). 
