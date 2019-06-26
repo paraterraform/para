@@ -36,12 +36,11 @@ Bash would download (and cache!) the right (or the latest) version of `para` whe
 It's suggested way of installing `para` - just download the launcher script to your Terraform/Terragrunt config dir
 (dont' forget to check it into your version control system) and make it executable:
 ```bash
-curl --location --output para https://raw.githubusercontent.com/paraterraform/para/master/para
-chmod +x para 
+curl -Lo para https://raw.githubusercontent.com/paraterraform/para/master/para && chmod +x para 
 ``` 
 From there on just always invoke Para as `./para`:
 ```bash
-$ ./para 
+$ ./para terraform init
 Para Launcher Activated!
 - Checking para.cfg.yaml in current directory for 'version: X.Y.Z'
 - Desired version: latest (latest is used when no version specified)
