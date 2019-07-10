@@ -21,7 +21,7 @@ cache="${tmp}/para-${UID}/para/${version}"
 sha256sums="${cache}/SHA256SUMS"
 platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
 
-if [[ ! -f "${sha256sums}" ]] || ( [[ "${version}" == "latest" ]] && ! find "${sha256sums}" -mtime +1d -exec false '{}' + ) ; then
+if [[ ! -f "${sha256sums}" ]] || ( [[ "${version}" == "latest" ]] && ! find "${sha256sums}" -mmin +1440 -exec false '{}' + ) ; then
   echo "- Downloading checksums for version '${version}' to '$(path ${cache})'"
   mkdir -p "${cache}"
   checksumsUrl="${downloads}/SHA256SUMS"
