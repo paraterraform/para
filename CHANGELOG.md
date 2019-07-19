@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Added
+
+- Auto-unmount stale FUSE mounts over well-known plugin dirs
+
 ## 0.3.2 - 2019-07-10
 
 ### Fixed

@@ -100,10 +100,25 @@ func Execute(
 	for _, pluginDir = range pluginDirCandidates {
 		expandedPath := utils.PathExpand(pluginDir)
 
-		if stat, err = os.Stat(expandedPath); !os.IsNotExist(err) {
-			mountpoint = &expandedPath
-			break
+		stat, err = os.Stat(expandedPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			// previous instance of para didn't finish correctly - let's try to recover, but only once
+			err := fuse.Unmount(expandedPath)
+			if err != nil {
+				fmt.Printf("\n* Error: failed while unmounting stale FUSE mount - %s", err)
+				os.Exit(1)
+			}
+			stat, err = os.Stat(expandedPath)
+			if err != nil {
+				fmt.Printf("\n* Error: cannnot access plugin dir at '%s' - %s", pluginDir, err)
+				os.Exit(1)
+			}
 		}
+		mountpoint = &expandedPath
+		break
 	}
 
 	if mountpoint == nil {
