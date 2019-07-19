@@ -5,6 +5,7 @@
 ### Added
 
 - Auto-unmount stale FUSE mounts over well-known plugin dirs
+- PID-based lock next to `plugins` dir so that we can clean screwed FUSE with more confidence
 
 ## 0.3.2 - 2019-07-10
 

@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -139,29 +140,38 @@ func Execute(
 		os.Exit(1)
 	}
 	// Check if plugin dir is in use
-	pidBytes, err := ioutil.ReadFile(filepath.Join(*mountpoint, FileMeta))
-	if os.IsNotExist(err) {
-		fmt.Println(pluginDir)
-	} else {
-		if err != nil {
-			fmt.Printf(
-				"\n* Error: the previous instance of Para failed and left '%s' in a bad shape - please "+
-					"run following command to clean up: para -u %s\n", pluginDir, pluginDir,
-			)
-		} else {
-			fmt.Printf("\n* Error: another instance of Para (PID: %s) uses '%s' right now - "+
-				"please wait until it will finish.\n", strings.TrimSpace(string(pidBytes)), pluginDir,
+	pidFilePath := filepath.Join(filepath.Dir(*mountpoint), "para.pid")
+	pidFile, err := os.OpenFile(pidFilePath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	if err != nil {
+		// pidFile exists
+		if pid := verifyPidRunning(pidFilePath); pid > 0 {
+			fmt.Printf("\n* Error: another instance of Para (PID: %d) uses '%s' right now - "+
+				"please wait until it will finish.\n", pid, pluginDir,
 			)
 			if pluginDir == pathPluginDirUser {
 				fmt.Printf(
-					" If the other instance is running from another Terraform configuration - please "+
-						"consider creating '%s' within Terraform configuration dir to avoid contention over '%s'.\n",
+					"  If the other instance is running from another Terraform configuration - please "+
+						"consider creating './%s' _within_ Terraform configuration dir to avoid contention over '%s'.\n",
 					pathPluginDirLocal, pathPluginDirUser,
 				)
 			}
+			os.Exit(1)
 		}
-		os.Exit(1)
+
+		err = os.Remove(pidFilePath)
+		if err != nil {
+			fmt.Printf("\n* Error: couldn't remove stale PID file at '%s' - %s", pidFilePath, err)
+			os.Exit(1)
+		}
+		_ = fuse.Unmount(*mountpoint)
+		pidFile, err = os.OpenFile(pidFilePath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+		if err != nil {
+			fmt.Printf("\n* Error: failed to aquire PID lock at '%s' - %s", pidFilePath, err)
+			os.Exit(1)
+		}
 	}
+	_, _ = pidFile.WriteString(fmt.Sprintln(os.Getpid()))
+	_ = pidFile.Sync()
 
 	// Primary Index
 	fmt.Printf("- Primary Index: ")
@@ -232,6 +242,7 @@ func Execute(
 
 	err = subprocess.Run()
 	_ = fuse.Unmount(*mountpoint)
+	_ = os.Remove(pidFilePath)
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
@@ -338,4 +349,25 @@ func appendToPath(new string) error {
 	current, _ := os.LookupEnv(name)
 	value := strings.Join(append(strings.Split(current, ":"), new), ":")
 	return os.Setenv(name, value)
+}
+
+func verifyPidRunning(path string) int {
+	pidBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return 0
+	}
+	// cannot read PID file
+	pidInt, err := strconv.Atoi(string(pidBytes))
+	if err != nil {
+		return 0
+	}
+	process, err := os.FindProcess(pidInt)
+	if err != nil {
+		return 0
+	}
+	err = process.Signal(syscall.Signal(0))
+	if err != nil {
+		return 0
+	}
+	return pidInt
 }

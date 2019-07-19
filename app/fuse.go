@@ -3,7 +3,6 @@ package app
 import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	"fmt"
 	"github.com/paraterraform/para/app/index"
 	"golang.org/x/net/context"
 	"os"
@@ -12,7 +11,6 @@ import (
 // META
 const (
 	DirRoot  = ""
-	FileMeta = ".para"
 )
 
 // FUSE
@@ -36,7 +34,6 @@ func (d Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		for _, platform := range d.fs.index.ListPlatforms() {
 			result = append(result, fuse.Dirent{Name: platform, Type: fuse.DT_Dir})
 		}
-		result = append(result, fuse.Dirent{Name: FileMeta, Type: fuse.DT_File})
 	} else {
 		for _, name := range d.fs.index.ListPluginsForPlatform(d.path) {
 			result = append(result, fuse.Dirent{Name: name, Type: fuse.DT_File})
@@ -47,9 +44,6 @@ func (d Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 func (d Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	if d.path == DirRoot {
-		if name == FileMeta {
-			return MetaFile{content: fmt.Sprintf("%d\n", os.Getpid())}, nil
-		}
 		for _, platform := range d.fs.index.ListPlatforms() {
 			if name == platform {
 				return Dir{path: name, fs: d.fs}, nil
@@ -111,18 +105,4 @@ func (f File) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Mode = 0555
 	a.Size = f.plugin.Size
 	return nil
-}
-
-type MetaFile struct {
-	content string
-}
-
-func (f MetaFile) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Mode = 0444
-	a.Size = uint64(len(f.content))
-	return nil
-}
-
-func (f MetaFile) ReadAll(ctx context.Context) ([]byte, error) {
-	return []byte(f.content), nil
 }
