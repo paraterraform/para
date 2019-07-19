@@ -10,7 +10,7 @@ import (
 
 // META
 const (
-	DirRoot  = ""
+	DirRoot = ""
 )
 
 // FUSE
