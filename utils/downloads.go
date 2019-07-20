@@ -161,7 +161,7 @@ func (d DownloadableFile) SaveTo(path string) error {
 		return err
 	}
 	defer func() { _ = out.Close() }()
-	defer func() { _ = os.Chmod(path, 0555) }()
+	defer func() { _ = os.Chmod(path, 0755) }()
 
 	// Write the body to file
 	_, err = io.Copy(out, pluginData)

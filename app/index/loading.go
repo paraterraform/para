@@ -209,6 +209,6 @@ func (i *LoadingIndex) BuildRuntimeIndex() *RuntimeIndex {
 		platformToFilenameToPlugin: platformToPlugins,
 		cacheDir:                   i.CacheDir,
 		openFiles:                  make(map[string]*os.File),
-		alreadyOpened:              make(map[string]bool),
+		alreadyOpened:              make(map[string]int),
 	}
 }

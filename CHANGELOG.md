@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Fixed
+
+- IO errors with concurrent open/close operations for same files  
+
 ## 0.4.0 - 2019-07-19
 
 ### Added

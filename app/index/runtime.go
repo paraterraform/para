@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 type RuntimeIndex struct {
@@ -13,7 +14,9 @@ type RuntimeIndex struct {
 	cacheDir                   string
 	openFiles                  map[string]*os.File
 
-	alreadyOpened map[string]bool
+	alreadyOpened map[string]int
+
+	sync.Mutex
 }
 
 func (i *RuntimeIndex) ListPluginsForPlatform(platform string) []string {
@@ -45,6 +48,9 @@ func (i RuntimeIndex) getPluginFilePath(plugin *Plugin) string {
 }
 
 func (i *RuntimeIndex) OpenPlugin(plugin *Plugin) error {
+	i.Lock()
+	defer i.Unlock()
+
 	path := i.getPluginFilePath(plugin)
 
 	cached := true
@@ -63,13 +69,13 @@ func (i *RuntimeIndex) OpenPlugin(plugin *Plugin) error {
 		lineControl = "\x1b[1A"
 	}
 
-	if v, ok := i.alreadyOpened[path]; !ok || !v {
+	if _, ok := i.alreadyOpened[path]; !ok {
 		fmt.Printf(
 			"%s- Para provides 3rd-party Terraform %s plugin '%s' version '%s' for '%s' (%s)\n\n",
 			lineControl, plugin.Kind, plugin.Name, plugin.Version, plugin.Platform, cachedStateStr,
 		)
-		i.alreadyOpened[path] = true
 	}
+	i.alreadyOpened[path] += 1
 
 	if !cached {
 		err := utils.DownloadableFile{Url: plugin.Url, ExtractPattern: "terraform-*", Digest: plugin.Digest}.SaveTo(path)
@@ -103,7 +109,16 @@ func (i *RuntimeIndex) GetReaderAt(plugin *Plugin) (io.ReaderAt, error) {
 }
 
 func (i *RuntimeIndex) ClosePlugin(plugin *Plugin) error {
+	i.Lock()
+	defer i.Unlock()
+
 	path := i.getPluginFilePath(plugin)
+
+	i.alreadyOpened[path] -= 1
+	if i.alreadyOpened[path] > 0 {
+		return nil // still in use
+	}
+
 	reader, ok := i.openFiles[path]
 	if ok {
 		err := reader.Close()
