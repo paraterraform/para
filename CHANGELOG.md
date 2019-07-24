@@ -5,6 +5,7 @@
 ### Fixed
 
 - Output for plugin dir path
+- Avoid race conditions in signal forwarding
 
 ## 0.4.1 - 2019-07-19
 

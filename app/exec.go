@@ -173,6 +173,7 @@ func Execute(
 	}
 	_, _ = pidFile.WriteString(fmt.Sprintln(os.Getpid()))
 	_ = pidFile.Sync()
+	defer func() { _ = os.Remove(pidFilePath) }()
 
 	// Primary Index
 	fmt.Printf("- Primary Index: ")
@@ -215,35 +216,33 @@ func Execute(
 	fmt.Println(strings.Repeat("-", 72))
 	fmt.Println()
 
-	// Init sub-process
-	subprocess := exec.Command(cmd, args[1:]...)
-
-	// Setup signal handlers and cleanup
-	var signalChan = make(chan os.Signal, 100)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		for sig := range signalChan {
-			if err := subprocess.Process.Signal(sig); err != nil {
-				fmt.Printf("* Para is unable to forward signal: %s", err) // TODO trace instead of log
-			}
-		}
-	}()
-	//
+	// init fuse
 	ready, err := mountPluginsDir(loadingIndex.BuildRuntimeIndex(), *mountpoint)
 	if err != nil {
 		fmt.Printf("* Para was unable to mount plugin FS over '%s': %s", pluginDir, err)
 		os.Exit(1)
 	}
 	<-ready
+	defer func() { _ = fuse.Unmount(*mountpoint) }()
 
-	// spawn sub-process
+	// Init sub-process
+	subprocess := exec.Command(cmd, args[1:]...)
 	subprocess.Stdin = os.Stdin
 	subprocess.Stdout = os.Stdout
 	subprocess.Stderr = os.Stderr
 
-	err = subprocess.Run()
-	_ = fuse.Unmount(*mountpoint)
-	_ = os.Remove(pidFilePath)
+	err = subprocess.Start()
+	if err != nil {
+		fmt.Printf("\n* Error: start subprocess: %s\n", err)
+		os.Exit(1)
+	}
+
+	// Setup signal handlers and cleanup
+	var signalChan = make(chan os.Signal, 100)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	go forwardSignals(subprocess.Process.Pid, signalChan)
+
+	err = subprocess.Wait()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
@@ -371,4 +370,16 @@ func verifyPidRunning(path string) int {
 		return 0
 	}
 	return pidInt
+}
+
+func forwardSignals(pid int, signals chan os.Signal) {
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return
+	}
+	for sig := range signals {
+		if err := process.Signal(sig); err != nil {
+			fmt.Printf("* Para is unable to forward signal: %s", err) // TODO trace instead of log
+		}
+	}
 }
