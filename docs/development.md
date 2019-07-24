@@ -46,8 +46,8 @@ In order to prepare provider binaries for all platforms:
 $ make release compress sums
 make clean release compress sums
 rm -rf ./release ./para
-GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o './release/para_v0.3.2_darwin-amd64'
-GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o './release/para_v0.3.2_linux-amd64'
+GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o './release/para_v0.4.2_darwin-amd64'
+GOPROXY="off" GOFLAGS="-mod=vendor" GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o './release/para_v0.4.2_linux-amd64'
 upx ./release/*
                        Ultimate Packer for eXecutables
                           Copyright (C) 1996 - 2018
@@ -55,8 +55,8 @@ UPX 3.95        Markus Oberhumer, Laszlo Molnar & John Reiser   Aug 26th 2018
 
         File size         Ratio      Format      Name
    --------------------   ------   -----------   -----------
-  11470148 ->   4272144   37.25%   macho/amd64   para_v0.3.2_darwin-amd64
-  10602880 ->   3888952   36.68%   linux/amd64   para_v0.3.2_linux-amd64
+  11470148 ->   4272144   37.25%   macho/amd64   para_v0.4.2_darwin-amd64
+  10602880 ->   3888952   36.68%   linux/amd64   para_v0.4.2_linux-amd64
    --------------------   ------   -----------   -----------
   22073028 ->   8161096   36.97%                 [ 2 files ]
 
