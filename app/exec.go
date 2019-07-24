@@ -235,7 +235,7 @@ func Execute(
 	if err != nil {
 		fmt.Printf("\n* Error: start subprocess: %s\n", err)
 		_ = fuse.Unmount(*mountpoint) // defer not guaranteed to run so we manually call it everywhere we need it
-		_ = os.Remove(pidFilePath) // defer not guaranteed to run so we manually call it everywhere we need it
+		_ = os.Remove(pidFilePath)    // defer not guaranteed to run so we manually call it everywhere we need it
 		os.Exit(1)
 	}
 
@@ -247,7 +247,7 @@ func Execute(
 	err = subprocess.Wait()
 
 	_ = fuse.Unmount(*mountpoint) // defer not guaranteed to run so we manually call it everywhere we need it
-	_ = os.Remove(pidFilePath) // defer not guaranteed to run so we manually call it everywhere we need it
+	_ = os.Remove(pidFilePath)    // defer not guaranteed to run so we manually call it everywhere we need it
 
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
