@@ -16,7 +16,7 @@ type RuntimeIndex struct {
 
 	alreadyOpened map[string]int
 
-	sync.Mutex
+	sync.RWMutex
 }
 
 func (i *RuntimeIndex) ListPluginsForPlatform(platform string) []string {
@@ -100,6 +100,9 @@ func (i *RuntimeIndex) OpenPlugin(plugin *Plugin) error {
 }
 
 func (i *RuntimeIndex) GetReaderAt(plugin *Plugin) (io.ReaderAt, error) {
+	i.RLock()
+	defer i.RUnlock()
+
 	path := i.getPluginFilePath(plugin)
 	reader, ok := i.openFiles[path]
 	if !ok {
@@ -119,6 +122,7 @@ func (i *RuntimeIndex) ClosePlugin(plugin *Plugin) error {
 		return nil // still in use
 	}
 
+	defer delete(i.openFiles, path)
 	reader, ok := i.openFiles[path]
 	if ok {
 		err := reader.Close()
@@ -126,7 +130,6 @@ func (i *RuntimeIndex) ClosePlugin(plugin *Plugin) error {
 			return err
 		}
 	}
-	delete(i.openFiles, path)
 	return nil
 }
 
