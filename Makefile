@@ -30,7 +30,7 @@ build:
 
 .PHONY: run
 run:
-	GOPROXY="off" GOFLAGS="-mod=vendor" go run . $(args)
+	GOPROXY="off" GOFLAGS="-mod=vendor" go run -race . $(args)
 
 .PHONY: release
 release: $(PLATFORMS)
