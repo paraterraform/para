@@ -173,13 +173,13 @@ func Execute(
 	}
 	_, _ = pidFile.WriteString(fmt.Sprintln(os.Getpid()))
 	_ = pidFile.Sync()
-	defer func() { _ = os.Remove(pidFilePath) }()
 
 	// Primary Index
 	fmt.Printf("- Primary Index: ")
 	loadingIndex, err := index.DiscoverIndex(primaryIndexCandidates, cacheDir, refresh)
 	if err != nil {
 		fmt.Printf("\n* Error: cannnot decode primary index as a valid YAML map: %s\n", err)
+		_ = os.Remove(pidFilePath) // defer not guaranteed to run so we manually call it everywhere we need it
 		os.Exit(1)
 	}
 	var indexStats []string
@@ -220,10 +220,10 @@ func Execute(
 	ready, err := mountPluginsDir(loadingIndex.BuildRuntimeIndex(), *mountpoint)
 	if err != nil {
 		fmt.Printf("* Para was unable to mount plugin FS over '%s': %s", pluginDir, err)
+		_ = os.Remove(pidFilePath) // defer not guaranteed to run so we manually call it everywhere we need it
 		os.Exit(1)
 	}
 	<-ready
-	defer func() { _ = fuse.Unmount(*mountpoint) }()
 
 	// Init sub-process
 	subprocess := exec.Command(cmd, args[1:]...)
@@ -234,6 +234,8 @@ func Execute(
 	err = subprocess.Start()
 	if err != nil {
 		fmt.Printf("\n* Error: start subprocess: %s\n", err)
+		_ = fuse.Unmount(*mountpoint) // defer not guaranteed to run so we manually call it everywhere we need it
+		_ = os.Remove(pidFilePath) // defer not guaranteed to run so we manually call it everywhere we need it
 		os.Exit(1)
 	}
 
@@ -243,6 +245,10 @@ func Execute(
 	go forwardSignals(subprocess.Process.Pid, signalChan)
 
 	err = subprocess.Wait()
+
+	_ = fuse.Unmount(*mountpoint) // defer not guaranteed to run so we manually call it everywhere we need it
+	_ = os.Remove(pidFilePath) // defer not guaranteed to run so we manually call it everywhere we need it
+
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {

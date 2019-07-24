@@ -6,6 +6,7 @@
 
 - Output for plugin dir path
 - Avoid race conditions in signal forwarding
+- Ensure cleanup executed when para is interrupted
 
 ## 0.4.1 - 2019-07-19
 
