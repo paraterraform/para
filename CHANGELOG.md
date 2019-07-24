@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Fixed
+
+- Output for plugin dir path
+
 ## 0.4.1 - 2019-07-19
 
 ### Fixed

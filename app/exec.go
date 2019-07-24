@@ -139,6 +139,7 @@ func Execute(
 		)
 		os.Exit(1)
 	}
+	fmt.Println(pluginDir)
 	// Check if plugin dir is in use
 	pidFilePath := filepath.Join(filepath.Dir(*mountpoint), "para.pid")
 	pidFile, err := os.OpenFile(pidFilePath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
@@ -150,7 +151,7 @@ func Execute(
 			)
 			if pluginDir == pathPluginDirUser {
 				fmt.Printf(
-					"  If the other instance is running from another Terraform configuration - please "+
+					"  If the other instance is running from another Terraform configuration - "+
 						"consider creating './%s' _within_ Terraform configuration dir to avoid contention over '%s'.\n",
 					pathPluginDirLocal, pathPluginDirUser,
 				)
