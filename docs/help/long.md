@@ -4,7 +4,7 @@
 $ para -h
 Para is being initialized...
 
-Para - community plugin manager for Terraform.
+Para - the missing community plugin manager for Terraform.
 A "swiss army knife" for Terraform and Terragrunt - just 1 tool to facilitate all your workflows.
 
 Concepts
@@ -72,6 +72,7 @@ Flags:
   -c, --cache string        cache dir (default - ~/.cache/para if exists or /tmp/para-$UID)
   -r, --refresh duration    attempt to refresh remote indices every given interval (default 1h0m0s)
   -t, --terraform string    Terraform version to download (default - latest)
+  -g, --terragrunt string   Terragrunt version to download (default - latest)
   -u, --unmount string      force unmount dir (just unmount the given dir and exit, all other flags and arguments ignored)
   -h, --help                help for this command
 ``` 

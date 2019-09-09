@@ -23,6 +23,7 @@ const (
 	flagRefresh    = "refresh"
 
 	flagTerraform = "terraform"
+	flagTerragrunt = "terragrunt"
 )
 
 const usageTemplate = `Flags:
@@ -178,7 +179,10 @@ Concepts
 		optionRefresh := viper.GetDuration(flagRefresh)
 
 		optionTerraform := viper.GetString(flagTerraform)
-		app.Execute(args, indexCandidates, extensionsCandidates, optionCachePath, optionRefresh, optionTerraform)
+		optionTerragrunt := viper.GetString(flagTerragrunt)
+		app.Execute(
+			args, indexCandidates, extensionsCandidates, optionCachePath, optionRefresh, optionTerraform, optionTerragrunt,
+		)
 	},
 }
 
@@ -245,6 +249,13 @@ func init() {
 		"Terraform version to download (default - latest)",
 	)
 
+	rootCmd.Flags().StringP(
+		flagTerragrunt,
+		"g",
+		"",
+		"Terragrunt version to download (default - latest)",
+	)
+
 	// Flags that change behavior
 	rootCmd.Flags().StringVarP(
 		&optionUnmount,
@@ -259,6 +270,7 @@ func init() {
 	_ = viper.BindPFlag(flagCache, rootCmd.Flags().Lookup(flagCache))
 	_ = viper.BindPFlag(flagRefresh, rootCmd.Flags().Lookup(flagRefresh))
 	_ = viper.BindPFlag(flagTerraform, rootCmd.Flags().Lookup(flagTerraform))
+	_ = viper.BindPFlag(flagTerragrunt, rootCmd.Flags().Lookup(flagTerragrunt))
 }
 
 func initConfig() {

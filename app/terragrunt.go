@@ -22,7 +22,7 @@ func downloadTerragrunt(version, cacheDir string, refresh time.Duration) (string
 
 	var urlRelease string
 	if version != "" {
-		versionToDownload = "v" + versionToDownload
+		versionToDownload = "v" + version
 	} else {
 		urlRelease = utils.UrlJoin(terragruntReleases, "latest")
 		releaseJsonBytes, _, err := utils.DownloadableFile{

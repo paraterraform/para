@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Fixed
+
+- Added missing flag for specifying desired Terragrunt version
+
 ## 0.4.2 - 2019-07-23
 
 ### Fixed

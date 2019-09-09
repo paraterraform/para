@@ -34,6 +34,7 @@ func Execute(
 	primaryIndexCandidates, indexExtensions []string,
 	customCachePath string, refresh time.Duration,
 	versionTerraform string,
+	versionTerragrunt string,
 ) {
 	var pluginDir string
 	var mountpoint *string
@@ -80,7 +81,7 @@ func Execute(
 		if err != nil {
 			// No terragrunt - need to download it
 			fmt.Print("downloading")
-			terragruntDir, err := downloadTerragrunt(versionTerraform, cacheDir, refresh)
+			terragruntDir, err := downloadTerragrunt(versionTerragrunt, cacheDir, refresh)
 			if err != nil {
 				fmt.Printf("\n* Error: Para was unable to download Terragrunt: %s\n", err)
 				os.Exit(1)
